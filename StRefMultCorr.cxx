@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.2  2011/08/11 23:51:10  hmasui
+// Suppress cout in the setParameterIndex function. Use TError for error messages.
+//
 // Revision 1.1  2011/08/11 18:38:28  hmasui
 // First version of Refmult correction class
 //
@@ -10,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include "StRefMultCorr.h"
+#include "TError.h"
 #include "TRandom.h"
 #include "TString.h"
 
@@ -60,14 +64,15 @@ Bool_t StRefMultCorr::isIndexOk() const
 {
   // mParameterIndex not initialized (-1)
   if ( mParameterIndex == -1 ) {
-    cout << "StRefMultCorr::isNparSetOk  mParameterIndex = -1. Call init() function to initialize centrality bins, corrections" << endl;
+    Error("StRefMultCorr::isNparSetOk", "mParameterIndex = -1. Call init(const Int_t RunId) function to initialize centrality bins, corrections");
     return kFALSE ;
   }
 
   // Out of bounds
   if ( mParameterIndex >= (Int_t)mStart_runId.size() ) {
-    cout << "StRefMultCorr::isNparSetOk  mParameterIndex = " << mParameterIndex << " > max number of parameter set = " << mStart_runId.size()
-      << ". Make sure you put correct index for this energy" << endl;
+    Error("StRefMultCorr::isNparSetOk",
+        Form("mParameterIndex = %d > max number of parameter set = %d. Make sure you put correct index for this energy",
+          mParameterIndex, mStart_runId.size()));
     return kFALSE ;
   }
 
@@ -140,13 +145,13 @@ Int_t StRefMultCorr::setParameterIndex(const Int_t RunId)
     if(RunId >= mStart_runId[npar] && RunId <= mStop_runId[npar])
     {
       mParameterIndex = npar ;
-      cout << "StRefMultCorr::setParameterIndex  Parameter set = " << mParameterIndex << " for RUN " << RunId << endl;
+//      cout << "StRefMultCorr::setParameterIndex  Parameter set = " << mParameterIndex << " for RUN " << RunId << endl;
       break ;
     }
   }
 
   if(mParameterIndex == -1){
-    cout << "StRefMultCorr::setParameterIndex  Parameter set does not exist for RUN " << RunId << endl;
+    Error("StRefMultCorr::setParameterIndex", "Parameter set does not exist for RUN %d", RunId);
   }
   //else cout << "Parameter set = " << npar_set << endl;
 
@@ -310,10 +315,10 @@ void StRefMultCorr::read()
   const Char_t* inputFileName("StRoot/StRefMultCorr/Centrality_def.txt");
   ifstream ParamFile(inputFileName);
   if(!ParamFile){
-    cout << "StRefMultCorr::init  cannot open " << inputFileName << endl;
+    cout << "StRefMultCorr::read  cannot open " << inputFileName << endl;
     return;
   }
-  cout << "StRefMultCorr::init  Open " << inputFileName << endl;
+  cout << "StRefMultCorr::read  Open " << inputFileName << endl;
 
 //  Int_t input_counter = 0;
   string line ;
@@ -344,17 +349,19 @@ void StRefMultCorr::read()
       mCentrality_bins[mNCentrality].push_back( 5000 );
       //cout << "Data line = " << input_counter << ", Start_runId = " << Start_runId[input_counter] << ", Stop_runId = " << Stop_runId[input_counter] << endl;
       const UInt_t id = mStart_runId.size()-1;
-      cout << "StRefMultCorr::init  Start_runId = " << mStart_runId[id] << ", Stop_runId = " << mStop_runId[id] << endl;
-      cout << "StRefMultCorr::init  Start_zvertex = " << mStart_zvertex[id] << ", Stop_zvertex = " << mStop_zvertex[id] << endl;
-      cout << "StRefMultCorr::init  Normalize_stop = " << mNormalize_stop[id] << endl;
+      cout << "StRefMultCorr::read  Index = " << id << endl;
+      cout << "StRefMultCorr::read  Start_runId = " << mStart_runId[id] << ", Stop_runId = " << mStop_runId[id] << endl;
+      cout << "StRefMultCorr::read  Start_zvertex = " << mStart_zvertex[id] << ", Stop_zvertex = " << mStop_zvertex[id] << endl;
+      cout << "StRefMultCorr::read  Normalize_stop = " << mNormalize_stop[id] << endl;
       for(Int_t i=0;i<mNCentrality;i++){
-        cout << Form("StRefMultCorr::init  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
+        cout << Form("StRefMultCorr::read  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
       }
+      cout << endl;
     }
   }
   else
   {
-    cout << "StRefMultCorr::init  Input file is not correct! Wrong structure." << endl;
+    cout << "StRefMultCorr::read  Input file is not correct! Wrong structure." << endl;
     return;
   }
   ParamFile.close();
