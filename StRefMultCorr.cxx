@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.3  2011/08/12 20:28:07  hmasui
+// Avoid varying corrected refmult in the same event by random number
+//
 // Revision 1.2  2011/08/11 23:51:10  hmasui
 // Suppress cout in the setParameterIndex function. Use TError for error messages.
 //
@@ -29,6 +32,10 @@ using std::vector ;
 // Default constructor
 StRefMultCorr::StRefMultCorr()
 {
+  mRefMult = 0 ;
+  mVz = -9999. ;
+  mRefMult_corr = -1.0 ;
+
   // Clear all data members
   clear() ;
 
@@ -60,6 +67,19 @@ void StRefMultCorr::clear()
 }
 
 //____________________________________________________________________________________________________
+void StRefMultCorr::initEvent(const UShort_t RefMult, const Double_t z)
+{
+  // Set refmult, vz and corrected refmult if current (refmult,vz) are different from inputs
+  // User must call this function event-by-event before 
+  // calling any other public functions
+  if ( mRefMult != RefMult || mVz != z ) {
+    mRefMult      = RefMult ;
+    mVz           = z ;
+    mRefMult_corr = getRefMultCorr(mRefMult, mVz) ;
+  }
+}
+
+//____________________________________________________________________________________________________
 Bool_t StRefMultCorr::isIndexOk() const
 {
   // mParameterIndex not initialized (-1)
@@ -80,26 +100,24 @@ Bool_t StRefMultCorr::isIndexOk() const
 }
 
 //____________________________________________________________________________________________________
-Bool_t StRefMultCorr::isZvertexOk(const Double_t z) const
+Bool_t StRefMultCorr::isZvertexOk() const
 {
   // Primary z-vertex check
-  return ( z > mStart_zvertex[mParameterIndex] && z < mStop_zvertex[mParameterIndex] ) ;
+  return ( mVz > mStart_zvertex[mParameterIndex] && mVz < mStop_zvertex[mParameterIndex] ) ;
 }
 
 //____________________________________________________________________________________________________
-Bool_t StRefMultCorr::isRefMultOk(const UShort_t RefMult, const Double_t z) const
+Bool_t StRefMultCorr::isRefMultOk() const
 {
   // Invalid index
   if ( !isIndexOk() ) return kFALSE ;
 
   // select 0-80%
-  const Double_t RefMult_corr = getRefMultCorr(RefMult,z); // First correct for the z-vertex dependence
-
-  return (RefMult_corr > mCentrality_bins[0][mParameterIndex] && RefMult_corr < mCentrality_bins[mNCentrality][mParameterIndex]);
+  return (mRefMult_corr > mCentrality_bins[0][mParameterIndex] && mRefMult_corr < mCentrality_bins[mNCentrality][mParameterIndex]);
 }
 
 //____________________________________________________________________________________________________
-Bool_t StRefMultCorr::isCentralityOk(const Int_t icent, const UShort_t RefMult, const Double_t z) const
+Bool_t StRefMultCorr::isCentralityOk(const Int_t icent) const
 {
   // Invalid centrality id
   if ( icent < -1 || icent >= mNCentrality+1 ) return kFALSE ;
@@ -107,19 +125,16 @@ Bool_t StRefMultCorr::isCentralityOk(const Int_t icent, const UShort_t RefMult, 
   // Invalid index
   if ( !isIndexOk() ) return kFALSE ;
 
-  // select 0-80%
-  const Double_t RefMult_corr = getRefMultCorr(RefMult,z); // First correct for the z-vertex dependence
-
   // Special case
   // 1. 80-100% for icent=-1
-  if ( icent == -1 ) return (RefMult_corr <= mCentrality_bins[0][mParameterIndex]);
+  if ( icent == -1 ) return (mRefMult_corr <= mCentrality_bins[0][mParameterIndex]);
 
   // 2. icent = mNCentrality
-  if ( icent == mNCentrality ) return (RefMult_corr <= mCentrality_bins[mNCentrality][mParameterIndex]);
+  if ( icent == mNCentrality ) return (mRefMult_corr <= mCentrality_bins[mNCentrality][mParameterIndex]);
 
-  const Bool_t ok = (RefMult_corr > mCentrality_bins[icent][mParameterIndex] && RefMult_corr <= mCentrality_bins[icent+1][mParameterIndex]);
+  const Bool_t ok = (mRefMult_corr > mCentrality_bins[icent][mParameterIndex] && mRefMult_corr <= mCentrality_bins[icent+1][mParameterIndex]);
 //  if(ok){
-//    cout << "StRefMultCorr::isCentralityOk  refmultcorr = " << RefMult_corr
+//    cout << "StRefMultCorr::isCentralityOk  refmultcorr = " << mRefMult_corr
 //      << "  min. bin = " << mCentrality_bins[icent][mParameterIndex]
 //      << "  max. bin = " << mCentrality_bins[icent+1][mParameterIndex]
 //      << endl;
@@ -160,10 +175,17 @@ Int_t StRefMultCorr::setParameterIndex(const Int_t RunId)
 
 
 //____________________________________________________________________________________________________
+Double_t StRefMultCorr::getRefMultCorr() const
+{
+  // Call initEvent() first
+  return mRefMult_corr ;
+}
+
+//____________________________________________________________________________________________________
 Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z) const
 {
   // Apply correction if parameter index & z-vertex are ok
-  if (!isIndexOk() || !isZvertexOk(z)) return RefMult ;
+  if (!isIndexOk() || !isZvertexOk()) return RefMult ;
 
   // Correction function for RefMult, takes into account z_vertex dependence
 
@@ -222,15 +244,12 @@ Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z)
 }
 */
 //____________________________________________________________________________________________________
-Double_t StRefMultCorr::getWeight(const UShort_t RefMult, const Double_t z) const
+Double_t StRefMultCorr::getWeight() const
 {
   Double_t Weight = 1.0;
 
   // Invalid index
   if( !isIndexOk() ) return Weight ;
-
-  // Calculates weight for low RefMult. Takes into account the efficiency loss of the trigger.
-  const Double_t RefMult_corr = getRefMultCorr(RefMult,z); // First correct for the z-vertex dependence
 
   const Double_t par0 =   1.03165e+00;
   const Double_t par1 =   6.22542e+01;
@@ -242,28 +261,27 @@ Double_t StRefMultCorr::getWeight(const UShort_t RefMult, const Double_t z) cons
   //const Double_t A = ((1.27/1.21))/(30.0*30.0); // Don't ask...
   const Double_t A = (0.05/0.21)/(30.0*30.0); // Don't ask...
 
-  if(isRefMultOk(RefMult, z) // 0-80%
-      && RefMult_corr < mNormalize_stop[mParameterIndex] // re-weighting only apply up to normalization point
-      && RefMult_corr != -(par3/par2) // avoid denominator = 0
+  if(isRefMultOk() // 0-80%
+      && mRefMult_corr < mNormalize_stop[mParameterIndex] // re-weighting only apply up to normalization point
+      && mRefMult_corr != -(par3/par2) // avoid denominator = 0
     )
   {
-    Weight = par0 + par1/(par2*RefMult_corr + par3) + par4*(par2*RefMult_corr + par3); // Parametrization of MC/data RefMult ratio
-    Weight = Weight + (Weight-1.0)*(A*z*z); // z-dependent weight correction
+    Weight = par0 + par1/(par2*mRefMult_corr + par3) + par4*(par2*mRefMult_corr + par3); // Parametrization of MC/data RefMult ratio
+    Weight = Weight + (Weight-1.0)*(A*mVz*mVz); // z-dependent weight correction
   }
 
   return Weight;
 }
 
 //____________________________________________________________________________________________________
-Int_t StRefMultCorr::getCentralityBin16(const UShort_t RefMult, const Double_t z) const
+Int_t StRefMultCorr::getCentralityBin16() const
 {
   Int_t CentBin16 = -1;
 
   // Invalid index
   if( !isIndexOk() ) return CentBin16 ;
 
-//  const Double_t RefMult_corr = getRefMultCorr(RefMult,z); // First correct for the z-vertex dependence
-  while(CentBin16 < mNCentrality && !isCentralityOk(CentBin16, RefMult, z) )
+  while(CentBin16 < mNCentrality && !isCentralityOk(CentBin16) )
   {
     CentBin16++;
   }
@@ -273,27 +291,25 @@ Int_t StRefMultCorr::getCentralityBin16(const UShort_t RefMult, const Double_t z
 }
 
 //____________________________________________________________________________________________________
-Int_t StRefMultCorr::getCentralityBin9(const UShort_t RefMult, const Double_t z) const
+Int_t StRefMultCorr::getCentralityBin9() const
 {
   Int_t CentBin9 = -1;
 
   // Invalid index
   if ( !isIndexOk() ) return CentBin9 ;
 
-  const Int_t CentBin16 = getCentralityBin16(RefMult,z); // Centrality bin 16
+  const Int_t CentBin16 = getCentralityBin16(); // Centrality bin 16
   const Bool_t isCentralityOk = CentBin16 >= 0 && CentBin16 < mNCentrality ;
 
   // No centrality is defined
   if (!isCentralityOk) return CentBin9 ;
 
-  const Double_t RefMult_corr = getRefMultCorr(RefMult,z); // First correct for the z-vertex dependence
-
   // First handle the exceptions
-  if(RefMult_corr > mCentrality_bins[15][mParameterIndex] && RefMult_corr <= mCentrality_bins[16][mParameterIndex])
+  if(mRefMult_corr > mCentrality_bins[15][mParameterIndex] && mRefMult_corr <= mCentrality_bins[16][mParameterIndex])
   {
     CentBin9 = 8; // most central 5%
   }
-  else if(RefMult_corr > mCentrality_bins[14][mParameterIndex] && RefMult_corr <= mCentrality_bins[15][mParameterIndex])
+  else if(mRefMult_corr > mCentrality_bins[14][mParameterIndex] && mRefMult_corr <= mCentrality_bins[15][mParameterIndex])
   {
     CentBin9 = 7; // most central 5-10%
   }

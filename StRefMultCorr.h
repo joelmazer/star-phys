@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.2  2011/08/12 20:28:04  hmasui
+// Avoid varying corrected refmult in the same event by random number
+//
 // Revision 1.1  2011/08/11 18:38:36  hmasui
 // First version of Refmult correction class
 //
@@ -47,21 +50,22 @@ class StRefMultCorr {
     StRefMultCorr();
     virtual ~StRefMultCorr(); /// Default destructor
 
-    // Functions
+    // Event-by-event initialization. Call this function event-by-event
+    void initEvent(const UShort_t RefMult, const Double_t z) ; // Set refmult, vz and corrected refmult
 
     /// Get corrected refmult, correction as a function of primary z-vertex
-    Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z) const ;
+    Double_t getRefMultCorr() const;
 
     /// Get 16 centrality bins (5% increment, 0-5, 5-10, ..., 75-80)
-    Int_t getCentralityBin16(const UShort_t RefMult, const Double_t z) const ;
+    Int_t getCentralityBin16() const;
 
     /// Get 9 centrality bins (10% increment except for 0-5 and 5-10)
-    Int_t getCentralityBin9(const UShort_t RefMult, const Double_t z) const ;
+    Int_t getCentralityBin9() const;
 
     /// Re-weighting correction, correction is only applied up to mNormalize_step (energy dependent)
-    Double_t getWeight(const UShort_t RefMult, const Double_t z) const ;
+    Double_t getWeight() const;
 
-    // Initialization
+    // Initialization of centrality bins etc
     void init(const Int_t RunId);
 
 private:
@@ -69,17 +73,25 @@ private:
     void read() ; /// Read input parameters from text file StRoot/StRefMultCorr/Centrality_def.txt
     void clear() ; /// Clear all arrays
     Bool_t isIndexOk() const ; /// 0 <= mParameterIndex < maxArraySize
-    Bool_t isZvertexOk(const Double_t z) const ; /// mStart_zvertex < z < mStop_zvertex
-    Bool_t isRefMultOk(const UShort_t RefMult, const Double_t z) const ; /// 0-80%, (corrected refmult) > mCentrality_bins[0]
-    Bool_t isCentralityOk(const Int_t icent, const UShort_t RefMult, const Double_t z) const ; /// centrality bin check
+    Bool_t isZvertexOk() const ; /// mStart_zvertex < z < mStop_zvertex
+    Bool_t isRefMultOk() const ; /// 0-80%, (corrected refmult) > mCentrality_bins[0]
+    Bool_t isCentralityOk(const Int_t icent) const ; /// centrality bin check
     Int_t setParameterIndex(const Int_t RunId) ; /// Parameter index from run id (return mParameterIndex)
+
+    // Corrected refmult
+    Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z) const ;
+
 
     // Data members
     enum {
       mNCentrality = 16 /// 16 centrality bins, starting from 75-80% with 5% bin width
     };
 
-//    Double_t mRefMult_corr; /// Corrected refmult
+    // Use these variables to avoid varying the corrected refmult
+    // in the same event by random numbers
+    UShort_t mRefMult ;     /// Current reference multiplicity
+    Double_t mVz ;          /// Current primary z-vertex
+    Double_t mRefMult_corr; /// Corrected refmult
 
     std::vector<Int_t> mStart_runId       ; /// Start run id
     std::vector<Int_t> mStop_runId        ; /// Stop run id
