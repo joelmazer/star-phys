@@ -1,3 +1,11 @@
+//----------------------------------------------------------------------------------------------------
+// Example macro how to use StRefMultCorr
+// $Id$
+// $Log$
+// Revision 1.2  2011/08/12 20:28:45  hmasui
+// Change interface according to the update of StRefMultCorr class
+//
+//----------------------------------------------------------------------------------------------------
 
 //____________________________________________________________________________________________________
 // Example macro for StRefMutlCorr class implementation
@@ -21,18 +29,23 @@ void getCentralityBins()
   const UShort_t refmult = 100 ;
   const Double_t vz      = 20.0 ;
 
+  // ******* IMPORTANT ***********
+  // Call initEvent(const UShort_t RefMult, const Double_t z) function
+  // event-by-event at the beginning before using any other functions
+  refmultCorrUtil->initEvent(refmult, vz) ;
+
   // Get centrality bins
   //   see StRefMultCorr.h for the definition of centrality bins
-  const Int_t cent16 = refmultCorrUtil->getCentralityBin16(refmult, vz) ;
-  const Int_t cent9  = refmultCorrUtil->getCentralityBin9(refmult, vz) ;
+  const Int_t cent16 = refmultCorrUtil->getCentralityBin16() ;
+  const Int_t cent9  = refmultCorrUtil->getCentralityBin9() ;
 
   // Re-weighting corrections for peripheral bins
-  const Double_t reweight = refmultCorrUtil->getWeight(refmult, vz) ;
+  const Double_t reweight = refmultCorrUtil->getWeight() ;
 
   //----------------------------------------------------------------------------------------------------
   // Not really necessary for your study but if you want to see the corrected refmult distribution
   // Corrected refmult (z-vertex dependent correction)
   //  NOTE: type should be double or float, not integer
-  const Double_t refmultCor = refmultCorrUtil->getRefMultCorr(refmult, vz) ;
+  const Double_t refmultCor = refmultCorrUtil->getRefMultCorr() ;
 }
 
