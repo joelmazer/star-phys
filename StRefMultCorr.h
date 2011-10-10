@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.3  2011/10/10 21:30:34  hmasui
+// Replaced hard coded parameters for z-vertex and weight corrections by input parameters from text file
+//
 // Revision 1.2  2011/08/12 20:28:04  hmasui
 // Avoid varying corrected refmult in the same event by random number
 //
@@ -35,6 +38,8 @@
 //    15             0- 5%
 //
 //  See how to use this class in StRefMultCorr/macros/getCentralityBins.C
+//
+//  ahthors: Alexander Schmah, Hiroshi Masui
 //----------------------------------------------------------------------------------------------------
 
 #ifndef __StRefMultCorr_h__
@@ -84,7 +89,9 @@ private:
 
     // Data members
     enum {
-      mNCentrality = 16 /// 16 centrality bins, starting from 75-80% with 5% bin width
+        mNCentrality   = 16, /// 16 centrality bins, starting from 75-80% with 5% bin width
+        mNPar_z_vertex = 8,
+        mNPar_weight   = 6
     };
 
     // Use these variables to avoid varying the corrected refmult
@@ -99,6 +106,8 @@ private:
     std::vector<Double_t> mStop_zvertex   ; /// Stop z-vertex (cm)
     std::vector<Double_t> mNormalize_stop ; /// Normalization between MC and data (normalized in refmult>mNormalize_stop)
     std::vector<Int_t> mCentrality_bins[mNCentrality+1] ; /// Centrality bins (last value is set to 5000)
+    std::vector<Double_t> mPar_z_vertex[mNPar_z_vertex] ; /// parameters for z-vertex correction
+    std::vector<Double_t> mPar_weight[mNPar_weight] ; /// parameters for weight correction
     Int_t mParameterIndex; /// Index of correction parameters
 
     ClassDef(StRefMultCorr, 0)

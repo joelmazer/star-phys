@@ -1,6 +1,10 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.4  2011/10/10 21:30:37  hmasui
+// Replaced hard coded parameters for z-vertex and weight corrections by input parameters from text file
+//
+//
 // Revision 1.3  2011/08/12 20:28:07  hmasui
 // Avoid varying corrected refmult in the same event by random number
 //
@@ -64,6 +68,15 @@ void StRefMultCorr::clear()
     mCentrality_bins[i].clear() ;
   }
   mParameterIndex = -1 ;
+
+  for(Int_t i=0;i<mNPar_z_vertex;i++) {
+      mPar_z_vertex[i].clear() ;
+  }
+
+  for(Int_t i=0;i<mNPar_weight;i++) {
+      mPar_weight[i].clear();
+  }
+
 }
 
 //____________________________________________________________________________________________________
@@ -190,23 +203,25 @@ Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z)
   // Correction function for RefMult, takes into account z_vertex dependence
 
   // par0 to par5 define the parameters of a polynomial to parametrize z_vertex dependence of RefMult
-  const Double_t par0 = 4.02745e+02;
-  const Double_t par1 = 4.51653e-01;
-  const Double_t par2 = 3.51459e-04;
-  const Double_t par3 = -4.99006e-05;
-  const Double_t par4 = 0.0;
-  const Double_t par5 = 0.0;
+  const Double_t par0 = mPar_z_vertex[0][mParameterIndex];
+  const Double_t par1 = mPar_z_vertex[1][mParameterIndex];
+  const Double_t par2 = mPar_z_vertex[2][mParameterIndex];
+  const Double_t par3 = mPar_z_vertex[3][mParameterIndex];
+  const Double_t par4 = mPar_z_vertex[4][mParameterIndex];
+  const Double_t par5 = mPar_z_vertex[5][mParameterIndex];
+  const Double_t par6 = mPar_z_vertex[6][mParameterIndex];
+  const Double_t par7 = mPar_z_vertex[7][mParameterIndex]; // this parameter is usually 0, it takes care for an additional efficiency, usually difference between phase A and phase B parameter 0
 
   const Double_t  RefMult_ref = par0; // Reference mean RefMult at z=0
-  const Double_t  RefMult_z = par0 + par1*z + par2*z*z + par3*z*z*z + par4*z*z*z*z + par5*z*z*z*z*z; // Parametrization of mean RefMult vs. z_vertex position
+  const Double_t  RefMult_z = par0 + par1*z + par2*z*z + par3*z*z*z + par4*z*z*z*z + par5*z*z*z*z*z + par6*z*z*z*z*z*z; // Parametrization of mean RefMult vs. z_vertex position
   Double_t  Hovno = 1.0; // Correction factor for RefMult, takes into account z_vertex dependence
 
   if(RefMult_z > 0.0)
   {
-    Hovno = RefMult_ref/RefMult_z;
+    Hovno = (RefMult_ref + par7)/RefMult_z;
   }
 
-  Double_t RefMult_d = (Double_t)(RefMult)+gRandom->Rndm()-0.5; // random sampling over bin width -> avoid peak structures in corrected distribution
+  Double_t RefMult_d = (Double_t)(RefMult)+gRandom->Rndm(); // random sampling over bin width -> avoid peak structures in corrected distribution
   const Double_t RefMult_corr  = RefMult_d*Hovno;
 //  cout << "Input RefMult = " << RefMult << ", input z = " << z << ", RefMult_corr = " << RefMult_corr << endl;
   return RefMult_corr ;
@@ -251,15 +266,16 @@ Double_t StRefMultCorr::getWeight() const
   // Invalid index
   if( !isIndexOk() ) return Weight ;
 
-  const Double_t par0 =   1.03165e+00;
-  const Double_t par1 =   6.22542e+01;
-  const Double_t par2 =   5.04440e+01;
-  const Double_t par3 =  -3.85695e+01;
-  const Double_t par4 =  -6.69691e-06;
+  const Double_t par0 =   mPar_weight[0][mParameterIndex];
+  const Double_t par1 =   mPar_weight[1][mParameterIndex];
+  const Double_t par2 =   mPar_weight[2][mParameterIndex];
+  const Double_t par3 =   mPar_weight[3][mParameterIndex];
+  const Double_t par4 =   mPar_weight[4][mParameterIndex];
+  const Double_t A    =   mPar_weight[5][mParameterIndex];
 
   // Additional z-vetex dependent correction
   //const Double_t A = ((1.27/1.21))/(30.0*30.0); // Don't ask...
-  const Double_t A = (0.05/0.21)/(30.0*30.0); // Don't ask...
+  //const Double_t A = (0.05/0.21)/(30.0*30.0); // Don't ask...
 
   if(isRefMultOk() // 0-80%
       && mRefMult_corr < mNormalize_stop[mParameterIndex] // re-weighting only apply up to normalization point
@@ -362,6 +378,19 @@ void StRefMultCorr::read()
       Double_t normalize_stop ;
       ParamFile >> normalize_stop ;
       mNormalize_stop.push_back( normalize_stop );
+
+      for(Int_t i=0;i<mNPar_z_vertex;i++) {
+          Double_t param;
+          ParamFile >> param;
+          mPar_z_vertex[i].push_back( param );
+      }
+
+      for(Int_t i=0;i<mNPar_weight;i++) {
+          Double_t param;
+          ParamFile >> param;
+          mPar_weight[i].push_back( param );
+      }
+
       mCentrality_bins[mNCentrality].push_back( 5000 );
       //cout << "Data line = " << input_counter << ", Start_runId = " << Start_runId[input_counter] << ", Stop_runId = " << Stop_runId[input_counter] << endl;
       const UInt_t id = mStart_runId.size()-1;
@@ -371,6 +400,13 @@ void StRefMultCorr::read()
       cout << "StRefMultCorr::read  Normalize_stop = " << mNormalize_stop[id] << endl;
       for(Int_t i=0;i<mNCentrality;i++){
         cout << Form("StRefMultCorr::read  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
+      }
+
+      for(Int_t i=0;i<mNPar_z_vertex;i++) {
+          cout << "mPar_z_vertex[" << i << "] = " << mPar_z_vertex[i][id] <<  endl;
+      }
+      for(Int_t i=0;i<mNPar_weight;i++) {
+          cout << "mPar_weight[" << i << "] = " << mPar_weight[i][id] << endl;
       }
       cout << endl;
     }
