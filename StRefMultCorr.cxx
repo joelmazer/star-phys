@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.5  2011/10/11 19:35:20  hmasui
+// Fix typo. Add z-vertex check in getWeight() function
+//
 // Revision 1.4  2011/10/10 21:30:37  hmasui
 // Replaced hard coded parameters for z-vertex and weight corrections by input parameters from text file
 //
@@ -265,6 +268,9 @@ Double_t StRefMultCorr::getWeight() const
 
   // Invalid index
   if( !isIndexOk() ) return Weight ;
+
+  // Invalid z-vertex
+  if( !isZvertexOk() ) return Weight ;
 
   const Double_t par0 =   mPar_weight[0][mParameterIndex];
   const Double_t par1 =   mPar_weight[1][mParameterIndex];

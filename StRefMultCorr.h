@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.4  2011/10/11 19:35:18  hmasui
+// Fix typo. Add z-vertex check in getWeight() function
+//
 // Revision 1.3  2011/10/10 21:30:34  hmasui
 // Replaced hard coded parameters for z-vertex and weight corrections by input parameters from text file
 //
@@ -39,7 +42,7 @@
 //
 //  See how to use this class in StRefMultCorr/macros/getCentralityBins.C
 //
-//  ahthors: Alexander Schmah, Hiroshi Masui
+//  authors: Alexander Schmah, Hiroshi Masui
 //----------------------------------------------------------------------------------------------------
 
 #ifndef __StRefMultCorr_h__
