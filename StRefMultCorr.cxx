@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.6  2011/11/08 19:11:05  hmasui
+// Add luminosity corrections for 200 GeV
+//
 // Revision 1.5  2011/10/11 19:35:20  hmasui
 // Fix typo. Add z-vertex check in getWeight() function
 //
@@ -80,18 +83,22 @@ void StRefMultCorr::clear()
       mPar_weight[i].clear();
   }
 
+  for(Int_t i=0;i<mNPar_luminosity;i++) {
+      mPar_luminosity[i].clear();
+  }
 }
 
 //____________________________________________________________________________________________________
-void StRefMultCorr::initEvent(const UShort_t RefMult, const Double_t z)
+void StRefMultCorr::initEvent(const UShort_t RefMult, const Double_t z, const Double_t zdcCoincidenceRate)
 {
   // Set refmult, vz and corrected refmult if current (refmult,vz) are different from inputs
   // User must call this function event-by-event before 
   // calling any other public functions
-  if ( mRefMult != RefMult || mVz != z ) {
-    mRefMult      = RefMult ;
-    mVz           = z ;
-    mRefMult_corr = getRefMultCorr(mRefMult, mVz) ;
+  if ( mRefMult != RefMult || mVz != z || mZdcCoincidenceRate != zdcCoincidenceRate ) {
+    mRefMult            = RefMult ;
+    mVz                 = z ;
+    mZdcCoincidenceRate = zdcCoincidenceRate ;
+    mRefMult_corr       = getRefMultCorr(mRefMult, mVz, mZdcCoincidenceRate) ;
   }
 }
 
@@ -198,12 +205,19 @@ Double_t StRefMultCorr::getRefMultCorr() const
 }
 
 //____________________________________________________________________________________________________
-Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z) const
+Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z,
+    const Double_t zdcCoincidenceRate) const
 {
   // Apply correction if parameter index & z-vertex are ok
   if (!isIndexOk() || !isZvertexOk()) return RefMult ;
 
   // Correction function for RefMult, takes into account z_vertex dependence
+
+  // Luminosity corrections
+  // 200 GeV only. correction = 1 for all the other energies
+  const Double_t par0l = mPar_luminosity[0][mParameterIndex] ;
+  const Double_t par1l = mPar_luminosity[1][mParameterIndex] ;
+  const Double_t correction_luminosity = (par0l==0.0) ? 1.0 : 1.0/(1.0 + par1l/par0l*zdcCoincidenceRate/1000.);
 
   // par0 to par5 define the parameters of a polynomial to parametrize z_vertex dependence of RefMult
   const Double_t par0 = mPar_z_vertex[0][mParameterIndex];
@@ -225,7 +239,7 @@ Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z)
   }
 
   Double_t RefMult_d = (Double_t)(RefMult)+gRandom->Rndm(); // random sampling over bin width -> avoid peak structures in corrected distribution
-  const Double_t RefMult_corr  = RefMult_d*Hovno;
+  const Double_t RefMult_corr  = RefMult_d*Hovno*correction_luminosity;
 //  cout << "Input RefMult = " << RefMult << ", input z = " << z << ", RefMult_corr = " << RefMult_corr << endl;
   return RefMult_corr ;
 }
@@ -397,6 +411,11 @@ void StRefMultCorr::read()
           mPar_weight[i].push_back( param );
       }
 
+      for(Int_t i=0;i<mNPar_luminosity;i++) {
+          Double_t param;
+          ParamFile >> param;
+          mPar_luminosity[i].push_back( param );
+      }
       mCentrality_bins[mNCentrality].push_back( 5000 );
       //cout << "Data line = " << input_counter << ", Start_runId = " << Start_runId[input_counter] << ", Stop_runId = " << Stop_runId[input_counter] << endl;
       const UInt_t id = mStart_runId.size()-1;
@@ -413,6 +432,9 @@ void StRefMultCorr::read()
       }
       for(Int_t i=0;i<mNPar_weight;i++) {
           cout << "mPar_weight[" << i << "] = " << mPar_weight[i][id] << endl;
+      }
+      for(Int_t i=0;i<mNPar_luminosity;i++) {
+          cout << "mPar_luminosity[" << i << "] = " << mPar_luminosity[i][id] << endl;
       }
       cout << endl;
     }

@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.5  2011/11/08 19:11:03  hmasui
+// Add luminosity corrections for 200 GeV
+//
 // Revision 1.4  2011/10/11 19:35:18  hmasui
 // Fix typo. Add z-vertex check in getWeight() function
 //
@@ -59,7 +62,10 @@ class StRefMultCorr {
     virtual ~StRefMultCorr(); /// Default destructor
 
     // Event-by-event initialization. Call this function event-by-event
-    void initEvent(const UShort_t RefMult, const Double_t z) ; // Set refmult, vz and corrected refmult
+    //   * Default ZDC coincidence rate = 0 to make the function backward compatible 
+    //   --> i.e. no correction will be applied unless users set the values for 200 GeV
+    void initEvent(const UShort_t RefMult, const Double_t z,
+        const Double_t zdcCoincidenceRate=0.0) ; // Set refmult, vz and zdc coincidence rate
 
     /// Get corrected refmult, correction as a function of primary z-vertex
     Double_t getRefMultCorr() const;
@@ -87,20 +93,22 @@ private:
     Int_t setParameterIndex(const Int_t RunId) ; /// Parameter index from run id (return mParameterIndex)
 
     // Corrected refmult
-    Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z) const ;
+    Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z, const Double_t zdcCoincidenceRate) const ;
 
 
     // Data members
     enum {
         mNCentrality   = 16, /// 16 centrality bins, starting from 75-80% with 5% bin width
         mNPar_z_vertex = 8,
-        mNPar_weight   = 6
+        mNPar_weight   = 6,
+        mNPar_luminosity = 2
     };
 
     // Use these variables to avoid varying the corrected refmult
     // in the same event by random numbers
     UShort_t mRefMult ;     /// Current reference multiplicity
     Double_t mVz ;          /// Current primary z-vertex
+    Double_t mZdcCoincidenceRate ; /// Current ZDC coincidence rate
     Double_t mRefMult_corr; /// Corrected refmult
 
     std::vector<Int_t> mStart_runId       ; /// Start run id
@@ -111,6 +119,7 @@ private:
     std::vector<Int_t> mCentrality_bins[mNCentrality+1] ; /// Centrality bins (last value is set to 5000)
     std::vector<Double_t> mPar_z_vertex[mNPar_z_vertex] ; /// parameters for z-vertex correction
     std::vector<Double_t> mPar_weight[mNPar_weight] ; /// parameters for weight correction
+    std::vector<Double_t> mPar_luminosity[mNPar_luminosity] ; /// parameters for luminosity correction (valid only for 200 GeV)
     Int_t mParameterIndex; /// Index of correction parameters
 
     ClassDef(StRefMultCorr, 0)
