@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.7  2011/11/30 00:25:07  hmasui
+// Additional check for ifstream to avoid reading one extra line from input file
+//
 // Revision 1.6  2011/11/08 19:11:05  hmasui
 // Add luminosity corrections for 200 GeV
 //
@@ -383,36 +386,40 @@ void StRefMultCorr::read()
     //cout << "Initial line" << endl;
     while(ParamFile.good())
     {
-      Int_t startRunId, stopRunId ;
-      Double_t startZvertex, stopZvertex ;
+      Int_t startRunId=0, stopRunId=0 ;
+      Double_t startZvertex=-9999., stopZvertex=-9999. ;
       ParamFile >> startRunId >> stopRunId >> startZvertex >> stopZvertex ;
+
+      // Error check
+      if(ParamFile.eof()) break;
+
       mStart_runId.push_back( startRunId ) ;
       mStop_runId.push_back( stopRunId ) ;
       mStart_zvertex.push_back( startZvertex ) ;
       mStop_zvertex.push_back( stopZvertex ) ;
       for(Int_t i=0;i<mNCentrality;i++) {
-        Int_t centralitybins;
+        Int_t centralitybins=-1;
         ParamFile >> centralitybins;
         mCentrality_bins[i].push_back( centralitybins );
       }
-      Double_t normalize_stop ;
+      Double_t normalize_stop=-1.0 ;
       ParamFile >> normalize_stop ;
       mNormalize_stop.push_back( normalize_stop );
 
       for(Int_t i=0;i<mNPar_z_vertex;i++) {
-          Double_t param;
+          Double_t param=-9999.;
           ParamFile >> param;
           mPar_z_vertex[i].push_back( param );
       }
 
       for(Int_t i=0;i<mNPar_weight;i++) {
-          Double_t param;
+          Double_t param=-9999.;
           ParamFile >> param;
           mPar_weight[i].push_back( param );
       }
 
       for(Int_t i=0;i<mNPar_luminosity;i++) {
-          Double_t param;
+          Double_t param=-9999.;
           ParamFile >> param;
           mPar_luminosity[i].push_back( param );
       }
