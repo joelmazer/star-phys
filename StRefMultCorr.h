@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.6  2012/04/23 21:29:33  hmasui
+// Added isBadRun() function for outlier rejection, getBeginRun() and getEndRun() to obtain the run range for a given (energy,year)
+//
 // Revision 1.5  2011/11/08 19:11:03  hmasui
 // Add luminosity corrections for 200 GeV
 //
@@ -52,6 +55,7 @@
 #define __StRefMultCorr_h__
 
 #include <vector>
+#include <map>
 #include "Rtypes.h"
 
 //____________________________________________________________________________________________________
@@ -60,6 +64,9 @@ class StRefMultCorr {
   public:
     StRefMultCorr();
     virtual ~StRefMultCorr(); /// Default destructor
+
+    // Bad run rejection
+    Bool_t isBadRun(const Int_t RunId) ;
 
     // Event-by-event initialization. Call this function event-by-event
     //   * Default ZDC coincidence rate = 0 to make the function backward compatible 
@@ -82,9 +89,17 @@ class StRefMultCorr {
     // Initialization of centrality bins etc
     void init(const Int_t RunId);
 
-private:
+    // Return begin/end run from energy and year
+    Int_t getBeginRun(const Double_t energy, const Int_t year) ;
+    Int_t getEndRun(const Double_t energy, const Int_t year) ;
+
+    // Print all parameters
+    void print(const Option_t* option="") const ;
+
+  private:
     // Functions
     void read() ; /// Read input parameters from text file StRoot/StRefMultCorr/Centrality_def.txt
+    void readBadRuns() ; /// Read bad run numbers
     void clear() ; /// Clear all arrays
     Bool_t isIndexOk() const ; /// 0 <= mParameterIndex < maxArraySize
     Bool_t isZvertexOk() const ; /// mStart_zvertex < z < mStop_zvertex
@@ -111,6 +126,7 @@ private:
     Double_t mZdcCoincidenceRate ; /// Current ZDC coincidence rate
     Double_t mRefMult_corr; /// Corrected refmult
 
+    std::vector<Int_t> mYear              ; /// Year
     std::vector<Int_t> mStart_runId       ; /// Start run id
     std::vector<Int_t> mStop_runId        ; /// Stop run id
     std::vector<Double_t> mStart_zvertex  ; /// Start z-vertex (cm)
@@ -121,6 +137,10 @@ private:
     std::vector<Double_t> mPar_weight[mNPar_weight] ; /// parameters for weight correction
     std::vector<Double_t> mPar_luminosity[mNPar_luminosity] ; /// parameters for luminosity correction (valid only for 200 GeV)
     Int_t mParameterIndex; /// Index of correction parameters
+
+    std::multimap<std::pair<Double_t, Int_t>, Int_t> mBeginRun ; /// Begin run number for a given (energy, year)
+    std::multimap<std::pair<Double_t, Int_t>, Int_t> mEndRun   ; /// End run number for a given (energy, year)
+    std::vector<Int_t> mBadRun ; /// Bad run number list
 
     ClassDef(StRefMultCorr, 0)
 };

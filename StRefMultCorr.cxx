@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.8  2012/04/23 21:29:37  hmasui
+// Added isBadRun() function for outlier rejection, getBeginRun() and getEndRun() to obtain the run range for a given (energy,year)
+//
 // Revision 1.7  2011/11/30 00:25:07  hmasui
 // Additional check for ifstream to avoid reading one extra line from input file
 //
@@ -25,6 +28,7 @@
 //
 //----------------------------------------------------------------------------------------------------
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -35,11 +39,9 @@
 
 ClassImp(StRefMultCorr)
 
-using std::cout ;
-using std::endl ;
-using std::ifstream ;
-using std::string ;
-using std::vector ;
+using namespace std ;
+
+typedef pair<Double_t, Int_t> keys;
 
 //____________________________________________________________________________________________________
 // Default constructor
@@ -54,6 +56,7 @@ StRefMultCorr::StRefMultCorr()
 
   // Read parameters
   read() ;
+  readBadRuns() ;
 }
 
 //____________________________________________________________________________________________________
@@ -63,10 +66,47 @@ StRefMultCorr::~StRefMultCorr()
 }
 
 //____________________________________________________________________________________________________
+Int_t StRefMultCorr::getBeginRun(const Double_t energy, const Int_t year)
+{
+  keys key(std::make_pair(energy, year));
+
+  // Make sure key exists
+  multimap<keys, Int_t>::iterator iterCheck = mBeginRun.find(key);
+  if ( iterCheck == mBeginRun.end() ) {
+    Error("StRefMultCorr::getBeginRun", "can't find energy = %1.1f, year = %d", energy, year);
+    return -1;
+  }
+
+  pair<multimap<keys, Int_t>::iterator, multimap<keys, Int_t>::iterator> iterRange = mBeginRun.equal_range(key);
+
+  return (*(iterRange.first)).second ;
+}
+
+//____________________________________________________________________________________________________
+Int_t StRefMultCorr::getEndRun(const Double_t energy, const Int_t year)
+{
+  keys key(std::make_pair(energy, year));
+
+  // Make sure key exists
+  multimap<keys, Int_t>::iterator iterCheck = mEndRun.find(key);
+  if ( iterCheck == mEndRun.end() ) {
+    Error("StRefMultCorr::getEndRun", "can't find energy = %1.1f, year = %d", energy, year);
+    return -1;
+  }
+
+  pair<multimap<keys, Int_t>::iterator, multimap<keys, Int_t>::iterator> iterRange = mEndRun.equal_range(key);
+  multimap<keys, Int_t>::iterator iter = iterRange.second ;
+  iter--;
+
+  return (*iter).second ;
+}
+
+//____________________________________________________________________________________________________
 void StRefMultCorr::clear()
 {
   // Clear all arrays, and set parameter index = -1
 
+  mYear.clear() ;
   mStart_runId.clear() ;
   mStop_runId.clear() ;
   mStart_zvertex.clear() ;
@@ -89,6 +129,25 @@ void StRefMultCorr::clear()
   for(Int_t i=0;i<mNPar_luminosity;i++) {
       mPar_luminosity[i].clear();
   }
+
+  mBeginRun.clear() ;
+  mEndRun.clear() ;
+  mBadRun.clear() ;
+}
+
+//____________________________________________________________________________________________________
+Bool_t StRefMultCorr::isBadRun(const Int_t RunId)
+{
+  // Return true if a given run id is bad run
+  vector<Int_t>::iterator iter = std::find(mBadRun.begin(), mBadRun.end(), RunId);
+#if 0
+  if ( iter != mBadRun.end() ) {
+    // QA
+    cout << "StRefMultCorr::isBadRun  Find bad run = " << (*iter) << endl;
+  }
+#endif
+
+  return ( iter != mBadRun.end() ) ;
 }
 
 //____________________________________________________________________________________________________
@@ -370,28 +429,33 @@ void StRefMultCorr::read()
   const Char_t* inputFileName("StRoot/StRefMultCorr/Centrality_def.txt");
   ifstream ParamFile(inputFileName);
   if(!ParamFile){
-    cout << "StRefMultCorr::read  cannot open " << inputFileName << endl;
+    Error("StRefMultCorr::read", "cannot open %s", inputFileName);
     return;
   }
-  cout << "StRefMultCorr::read  Open " << inputFileName << endl;
+  cout << "StRefMultCorr::read  Open " << inputFileName << flush ;
 
-//  Int_t input_counter = 0;
   string line ;
   getline(ParamFile,line);
-//  cout << line << endl;
 
 //  if(strcmp(line1,"Start_runId") == 0) // strcmp returns 0 if both string are identical
   if(line.find("Start_runId")!=string::npos)
   {
-    //cout << "Initial line" << endl;
     while(ParamFile.good())
     {
+      Int_t year;
+      Double_t energy;
+      ParamFile >> year >> energy ;
+
       Int_t startRunId=0, stopRunId=0 ;
       Double_t startZvertex=-9999., stopZvertex=-9999. ;
       ParamFile >> startRunId >> stopRunId >> startZvertex >> stopZvertex ;
 
       // Error check
       if(ParamFile.eof()) break;
+
+      mYear.push_back(year) ;
+      mBeginRun.insert(std::make_pair(std::make_pair(energy, year), startRunId));
+      mEndRun.insert(std::make_pair(std::make_pair(energy, year), stopRunId));
 
       mStart_runId.push_back( startRunId ) ;
       mStop_runId.push_back( stopRunId ) ;
@@ -424,33 +488,92 @@ void StRefMultCorr::read()
           mPar_luminosity[i].push_back( param );
       }
       mCentrality_bins[mNCentrality].push_back( 5000 );
-      //cout << "Data line = " << input_counter << ", Start_runId = " << Start_runId[input_counter] << ", Stop_runId = " << Stop_runId[input_counter] << endl;
-      const UInt_t id = mStart_runId.size()-1;
-      cout << "StRefMultCorr::read  Index = " << id << endl;
-      cout << "StRefMultCorr::read  Start_runId = " << mStart_runId[id] << ", Stop_runId = " << mStop_runId[id] << endl;
-      cout << "StRefMultCorr::read  Start_zvertex = " << mStart_zvertex[id] << ", Stop_zvertex = " << mStop_zvertex[id] << endl;
-      cout << "StRefMultCorr::read  Normalize_stop = " << mNormalize_stop[id] << endl;
-      for(Int_t i=0;i<mNCentrality;i++){
-        cout << Form("StRefMultCorr::read  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
-      }
-
-      for(Int_t i=0;i<mNPar_z_vertex;i++) {
-          cout << "mPar_z_vertex[" << i << "] = " << mPar_z_vertex[i][id] <<  endl;
-      }
-      for(Int_t i=0;i<mNPar_weight;i++) {
-          cout << "mPar_weight[" << i << "] = " << mPar_weight[i][id] << endl;
-      }
-      for(Int_t i=0;i<mNPar_luminosity;i++) {
-          cout << "mPar_luminosity[" << i << "] = " << mPar_luminosity[i][id] << endl;
-      }
-      cout << endl;
     }
   }
   else
   {
-    cout << "StRefMultCorr::read  Input file is not correct! Wrong structure." << endl;
+    cout << endl;
+    Error("StRefMultCorr::read", "Input file is not correct! Wrong structure.");
     return;
   }
   ParamFile.close();
+
+  cout << " [OK]" << endl;
+}
+
+//____________________________________________________________________________________________________
+void StRefMultCorr::readBadRuns()
+{
+  // Read bad run numbers
+  //   - From year 2010 and 2011
+  cout << "StRefMultCorr::readBadRuns  Open " << flush ;
+  for(Int_t i=0; i<2; i++) {
+    const Int_t year = 2010 + i ;
+    const Char_t* inputFileName(Form("StRoot/StRefMultCorr/bad_runs_refmult_year%d.txt", year));
+    ifstream fin(inputFileName);
+    if(!fin){
+      Error("StRefMultCorr::readBadRuns", "can't open %s", inputFileName);
+      return;
+    }
+    cout << "  " << inputFileName << flush;
+
+    Int_t runId = 0 ;
+    while( fin >> runId ) {
+      mBadRun.push_back(runId);
+    }
+  }
+  cout << " [OK]" << endl;
+}
+
+//____________________________________________________________________________________________________
+void StRefMultCorr::print(const Option_t* option) const
+{
+  cout << "StRefMultCorr::print  Print input parameters ========================================" << endl << endl;
+  const TString opt(option);
+
+//  Int_t input_counter = 0;
+  for(UInt_t id=0; id<mStart_runId.size(); id++) {
+    //cout << "Data line = " << input_counter << ", Start_runId = " << Start_runId[input_counter] << ", Stop_runId = " << Stop_runId[input_counter] << endl;
+//    const UInt_t id = mStart_runId.size()-1;
+
+    // Removed line break
+    cout << "  Index=" << id;
+    cout << Form(" Run=[%8d, %8d]", mStart_runId[id], mStop_runId[id]);
+    cout << Form(" z-vertex=[%1.1f, %1.1f]", mStart_zvertex[id], mStop_zvertex[id]);
+    cout << ", Normalize_stop=" << mNormalize_stop[id];
+    cout << endl;
+
+    if(opt.IsWhitespace()){
+      continue ;
+    }
+
+    cout << "Centrality:  ";
+    for(Int_t i=0;i<mNCentrality;i++){
+      cout << Form("  >%2d%%", 80-5*i);
+    }
+    cout << endl;
+    cout << "RefMult:     ";
+    for(Int_t i=0;i<mNCentrality;i++){
+//      cout << Form("StRefMultCorr::read  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
+      const TString tmp(">");
+      const TString centrality = tmp + Form("%d", mCentrality_bins[i][id]);
+      cout << Form("%6s", centrality.Data());
+    }
+    cout << endl;
+
+    for(Int_t i=0;i<mNPar_z_vertex;i++) {
+      cout << "  mPar_z_vertex[" << i << "] = " << mPar_z_vertex[i][id];
+    }
+    cout << endl;
+    for(Int_t i=0;i<mNPar_weight;i++) {
+      cout << "  mPar_weight[" << i << "] = " << mPar_weight[i][id];
+    }
+    cout << endl;
+    for(Int_t i=0;i<mNPar_luminosity;i++) {
+      cout << "  mPar_luminosity[" << i << "] = " << mPar_luminosity[i][id];
+    }
+    cout << endl << endl;
+  }
+  cout << "=====================================================================================" << endl;
 }
 
