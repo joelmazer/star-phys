@@ -1,0 +1,44 @@
+//----------------------------------------------------------------------------------------------------
+// $Id$
+// $Log$
+// Revision 1.1  2012/04/23 21:32:12  hmasui
+// Interface for future extention of centrality correction maker to other centrality measures, like refmult2
+//
+//
+//----------------------------------------------------------------------------------------------------
+
+#include "StRefMultCorr.h"
+#include "CentralityMaker.h"
+
+ClassImp(CentralityMaker)
+
+  CentralityMaker* CentralityMaker::fInstance = 0 ;
+
+//____________________________________________________________________________________________________
+CentralityMaker::CentralityMaker()
+{
+  // Create instance for centrality classes
+  fRefMultCorr = new StRefMultCorr() ;
+}
+
+//____________________________________________________________________________________________________
+CentralityMaker::~CentralityMaker()
+{ }
+
+//____________________________________________________________________________________________________
+CentralityMaker* CentralityMaker::instance()
+{
+  if ( !fInstance ) {
+    // Initialize StRefMultCorr only once
+    fInstance = new CentralityMaker() ;
+  }
+
+  return fInstance ;
+}
+
+//____________________________________________________________________________________________________
+StRefMultCorr* CentralityMaker::getRefMultCorr()
+{
+  return fRefMultCorr ;
+}
+
