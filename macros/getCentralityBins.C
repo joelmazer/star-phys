@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.4  2012/04/26 23:40:09  hmasui
+// Added how to use CentralityMaker, StRefMultCorr::isBadRun() function to remove outliers
+//
 // Revision 1.3  2011/11/08 19:12:24  hmasui
 // Update usage based on the latest update for 200 GeV (luminosity correction)
 //
@@ -27,13 +30,37 @@
 //       so that you can still use previous initEvent() function like
 //         void StRefMultCorr::initEvent(refmult, vz) ;
 //       without specifying zdc coincidence rate for lower beam energies
+//
+//   * You can now use the interface "CentralityMaker" class to access the StRefMultCorr
+//     see the usage below.
 void getCentralityBins()
 {
   gSystem->Load("StRefMultCorr");
-  StRefMultCorr* refmultCorrUtil = new StRefMultCorr();
+//  StRefMultCorr* refmultCorrUtil = new StRefMultCorr(); 
+  StRefMultCorr* refmultCorrUtil = CentralityMaker::instance()->getRefMultCorr() ;
 
   // You need to specify the run number you are going to process
   refmultCorrUtil->init(11078000);
+
+  //----------------------------------------------------------------------------------------------------
+  // *** Optional functions (not necessary to call)
+  //    void StRefMultCorr::print(const Optiont_t option="");
+  //    Int_t StRefMultCorr::getBeginRun(const Double_t energy, const Int_t year) ;
+  //    Int_t StRefMultCorr::getEndRun(const Double_t energy, const Int_t year) ;
+
+  // Print all parameters
+  //  - Don't print centrality and correction parameters without any option string (default)
+  refmultCorrUtil->print("Alex");
+
+  // Obtain begin and end run number from energy and year
+  cout << "Run " << refmultCorrUtil->getBeginRun(200.0, 2010) << " - " << refmultCorrUtil->getEndRun(200.0, 2010) << endl;
+
+  // You can check the 'bad run' based on the event-wise QA for refmult centrality
+  // by using StRefMultCorr::isBadRun() function
+  if ( refmultCorrUtil->isBadRun(12177061) ) {
+    cout << "Run 12177061 is bad" << endl;
+  }
+  //----------------------------------------------------------------------------------------------------
 
   // Dummy refmult and primary z-vertex
   const UShort_t refmult = 100 ;
