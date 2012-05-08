@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.2  2012/05/08 03:19:39  hmasui
+// Move parameters to Centrality_def_refmult.txt
+//
 // Revision 1.1  2012/04/23 21:32:16  hmasui
 // Interface for future extention of centrality correction maker to other centrality measures, like refmult2
 //
@@ -33,13 +36,15 @@ class CentralityMaker {
 
     // Interface
     StRefMultCorr* getRefMultCorr() ;
+    StRefMultCorr* getRefMult2Corr() ;
 
   private:
     CentralityMaker() ; // Constructor is private
     static CentralityMaker* fInstance ; // Static pointer of CentralityMaker
 
     // Centrality correction classes
-    StRefMultCorr* fRefMultCorr ; // refmult based centrality
+    StRefMultCorr* fRefMultCorr  ; // refmult based centrality
+    StRefMultCorr* fRefMult2Corr ; // refmult2 based centrality
 
     ClassDef(CentralityMaker, 0)
 };

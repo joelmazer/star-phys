@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.9  2012/05/08 03:19:49  hmasui
+// Move parameters to Centrality_def_refmult.txt
+//
 // Revision 1.8  2012/04/23 21:29:37  hmasui
 // Added isBadRun() function for outlier rejection, getBeginRun() and getEndRun() to obtain the run range for a given (energy,year)
 //
@@ -35,7 +38,6 @@
 #include "StRefMultCorr.h"
 #include "TError.h"
 #include "TRandom.h"
-#include "TString.h"
 
 ClassImp(StRefMultCorr)
 
@@ -45,7 +47,8 @@ typedef pair<Double_t, Int_t> keys;
 
 //____________________________________________________________________________________________________
 // Default constructor
-StRefMultCorr::StRefMultCorr()
+StRefMultCorr::StRefMultCorr(const TString name)
+ : mName(name)
 {
   mRefMult = 0 ;
   mVz = -9999. ;
@@ -420,13 +423,28 @@ Int_t StRefMultCorr::getCentralityBin9() const
 }
 
 //____________________________________________________________________________________________________
+const Char_t* StRefMultCorr::getTable() const
+{
+  if ( mName.CompareTo("refmult", TString::kIgnoreCase) == 0 ) {
+    return "StRoot/StRefMultCorr/Centrality_def_refmult.txt";
+  }
+  else if ( mName.CompareTo("refmult2", TString::kIgnoreCase) == 0 ) {
+    return "StRoot/StRefMultCorr/Centrality_def_refmult2.txt";
+  }
+  else{
+    Error("StRefMultCorr::getTable", "No implementation for %s", mName.Data());
+    cout << "Current available option is either refmult or refmult2" << endl;
+    return "";
+  }
+}
+//____________________________________________________________________________________________________
 void StRefMultCorr::read()
 {
   // Open the parameter file and read the data
   // Assume input file "Centrality_def.txt" is placed under StRoot/StRefMultCorr
   //  const Char_t* inputFileName("/star/u/aschmah/glauber/RefMult_corr/StRoot/StRefMultCorr/Centrality_def.txt");
 //  const Char_t* inputFileName("/u/aschmah/STAR/glauber/RefMultCorr/StRoot/StRefMultCorr/Centrality_def.txt");
-  const Char_t* inputFileName("StRoot/StRefMultCorr/Centrality_def.txt");
+  const Char_t* inputFileName(getTable());
   ifstream ParamFile(inputFileName);
   if(!ParamFile){
     Error("StRefMultCorr::read", "cannot open %s", inputFileName);
@@ -506,8 +524,8 @@ void StRefMultCorr::readBadRuns()
 {
   // Read bad run numbers
   //   - From year 2010 and 2011
-  cout << "StRefMultCorr::readBadRuns  Open " << flush ;
   for(Int_t i=0; i<2; i++) {
+    cout << "StRefMultCorr::readBadRuns  For " << mName << ": open " << flush ;
     const Int_t year = 2010 + i ;
     const Char_t* inputFileName(Form("StRoot/StRefMultCorr/bad_runs_refmult_year%d.txt", year));
     ifstream fin(inputFileName);
@@ -521,14 +539,14 @@ void StRefMultCorr::readBadRuns()
     while( fin >> runId ) {
       mBadRun.push_back(runId);
     }
+    cout << " [OK]" << endl;
   }
-  cout << " [OK]" << endl;
 }
 
 //____________________________________________________________________________________________________
 void StRefMultCorr::print(const Option_t* option) const
 {
-  cout << "StRefMultCorr::print  Print input parameters ========================================" << endl << endl;
+  cout << "StRefMultCorr::print  Print input parameters for " << mName << " ========================================" << endl << endl;
   const TString opt(option);
 
 //  Int_t input_counter = 0;

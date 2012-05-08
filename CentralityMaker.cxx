@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.2  2012/05/08 03:19:36  hmasui
+// Move parameters to Centrality_def_refmult.txt
+//
 // Revision 1.1  2012/04/23 21:32:12  hmasui
 // Interface for future extention of centrality correction maker to other centrality measures, like refmult2
 //
@@ -18,7 +21,8 @@ ClassImp(CentralityMaker)
 CentralityMaker::CentralityMaker()
 {
   // Create instance for centrality classes
-  fRefMultCorr = new StRefMultCorr() ;
+  fRefMultCorr  = new StRefMultCorr("refmult") ;
+  fRefMult2Corr = new StRefMultCorr("refmult2") ;
 }
 
 //____________________________________________________________________________________________________
@@ -41,4 +45,11 @@ StRefMultCorr* CentralityMaker::getRefMultCorr()
 {
   return fRefMultCorr ;
 }
+
+//____________________________________________________________________________________________________
+StRefMultCorr* CentralityMaker::getRefMult2Corr()
+{
+  return fRefMult2Corr ;
+}
+
 

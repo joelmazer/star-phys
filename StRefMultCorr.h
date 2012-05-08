@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.7  2012/05/08 03:19:51  hmasui
+// Move parameters to Centrality_def_refmult.txt
+//
 // Revision 1.6  2012/04/23 21:29:33  hmasui
 // Added isBadRun() function for outlier rejection, getBeginRun() and getEndRun() to obtain the run range for a given (energy,year)
 //
@@ -56,13 +59,16 @@
 
 #include <vector>
 #include <map>
-#include "Rtypes.h"
+#include "TString.h"
 
 //____________________________________________________________________________________________________
 // Class to correct z-vertex dependence of refmult
 class StRefMultCorr {
   public:
-    StRefMultCorr();
+    // Specify the type of refmult (default is refmult)
+    // "refmult"   - reference multiplicity defined in |eta|<0.5
+    // "refmult2"  - reference multiplicity defined in 0.5<|eta|<1.0
+    StRefMultCorr(const TString name="refmult");
     virtual ~StRefMultCorr(); /// Default destructor
 
     // Bad run rejection
@@ -97,6 +103,8 @@ class StRefMultCorr {
     void print(const Option_t* option="") const ;
 
   private:
+    const TString mName ; // refmult or refmult2
+
     // Functions
     void read() ; /// Read input parameters from text file StRoot/StRefMultCorr/Centrality_def.txt
     void readBadRuns() ; /// Read bad run numbers
@@ -109,6 +117,9 @@ class StRefMultCorr {
 
     // Corrected refmult
     Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z, const Double_t zdcCoincidenceRate) const ;
+
+    // Get table name based on the input refmult definition
+    const Char_t* getTable() const ;
 
 
     // Data members
