@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.7  2012/05/08 05:38:57  hmasui
+// Update the description of the usage for refmult2
+//
 // Revision 1.6  2012/05/08 03:23:11  hmasui
 // Update the usage for refmult2
 //
@@ -36,9 +39,14 @@
 //       so that you can still use previous initEvent() function like
 //         void StRefMultCorr::initEvent(refmult, vz) ;
 //       without specifying zdc coincidence rate for lower beam energies
+//     - (Very important) You should use BBC coincidence rate for refmult2
 //
 //   * You can now use the interface "CentralityMaker" class to access the StRefMultCorr
 //     see the usage below.
+//   * The refmult2 correction class is ready. You can access the correction by
+//      - StRefMultCorr* refmult2CorrUtil = CentralityMaker::instance()->getRefMult2Corr() ;
+//      (note the '2' in the function)
+//      - You can use exactly the same functions used in StRefMultCorr (see below)
 void getCentralityBins()
 {
   gSystem->Load("StRefMultCorr");
@@ -112,7 +120,8 @@ void getCentralityBins()
   const Int_t cent9_refmult2  = refmult2CorrUtil->getCentralityBin9() ;
 
   // Re-weighting corrections for peripheral bins
-  const Double_t reweight = refmultCorrUtil->getWeight() ;
+  const Double_t reweight          = refmultCorrUtil->getWeight() ;
+  const Double_t reweight_refmult2 = refmult2CorrUtil->getWeight() ;
 
   //----------------------------------------------------------------------------------------------------
   // Not really necessary for your study but if you want to see the corrected refmult distribution
