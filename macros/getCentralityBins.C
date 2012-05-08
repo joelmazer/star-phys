@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.6  2012/05/08 03:23:11  hmasui
+// Update the usage for refmult2
+//
 // Revision 1.5  2012/05/08 03:20:00  hmasui
 // Move parameters to Centrality_def_refmult.txt
 //
@@ -68,6 +71,10 @@ void getCentralityBins()
   if ( refmultCorrUtil->isBadRun(12177061) ) {
     cout << "Run 12177061 is bad" << endl;
   }
+
+  if ( refmult2CorrUtil->isBadRun(12177061) ) {
+    cout << "Run 12177061 is bad" << endl;
+  }
   //----------------------------------------------------------------------------------------------------
 
   // Dummy refmult and primary z-vertex
@@ -100,6 +107,10 @@ void getCentralityBins()
   const Int_t cent16 = refmultCorrUtil->getCentralityBin16() ;
   const Int_t cent9  = refmultCorrUtil->getCentralityBin9() ;
 
+  // Centrality from refmult2
+  const Int_t cent16_refmult2 = refmult2CorrUtil->getCentralityBin16() ;
+  const Int_t cent9_refmult2  = refmult2CorrUtil->getCentralityBin9() ;
+
   // Re-weighting corrections for peripheral bins
   const Double_t reweight = refmultCorrUtil->getWeight() ;
 
@@ -107,6 +118,7 @@ void getCentralityBins()
   // Not really necessary for your study but if you want to see the corrected refmult distribution
   // Corrected refmult (z-vertex dependent correction)
   //  NOTE: type should be double or float, not integer
-  const Double_t refmultCor = refmultCorrUtil->getRefMultCorr() ;
+  const Double_t refmultCor  = refmultCorrUtil->getRefMultCorr() ;
+  const Double_t refmult2Cor = refmult2CorrUtil->getRefMultCorr() ;
 }
 
