@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.10  2012/05/09 22:26:46  hmasui
+// Commented out option use in the print() function
+//
 // Revision 1.9  2012/05/08 03:19:49  hmasui
 // Move parameters to Centrality_def_refmult.txt
 //
@@ -547,7 +550,8 @@ void StRefMultCorr::readBadRuns()
 void StRefMultCorr::print(const Option_t* option) const
 {
   cout << "StRefMultCorr::print  Print input parameters for " << mName << " ========================================" << endl << endl;
-  const TString opt(option);
+  // Option switched off, can be used to specify parameters
+//  const TString opt(option);
 
 //  Int_t input_counter = 0;
   for(UInt_t id=0; id<mStart_runId.size(); id++) {
@@ -561,9 +565,9 @@ void StRefMultCorr::print(const Option_t* option) const
     cout << ", Normalize_stop=" << mNormalize_stop[id];
     cout << endl;
 
-    if(opt.IsWhitespace()){
-      continue ;
-    }
+//    if(opt.IsWhitespace()){
+//      continue ;
+//    }
 
     cout << "Centrality:  ";
     for(Int_t i=0;i<mNCentrality;i++){
