@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.8  2012/05/09 22:25:52  hmasui
+// Update comments (thanks to Bill Llope for suggestions)
+//
 // Revision 1.7  2012/05/08 05:38:57  hmasui
 // Update the description of the usage for refmult2
 //
@@ -49,12 +52,25 @@
 //      - You can use exactly the same functions used in StRefMultCorr (see below)
 void getCentralityBins()
 {
+  //----------------------------------------------------------------------------------------------------
+  // NOTE:
+  //   - The usage below is under the assumption that users add StRefMultCorr class in their StRoot/ and compiled it by cons. 
+  //   - You can definitely use the correction classes in your local pc with ROOT
+  //     because the codes under StRefMultCorr don't depend on any STAR libraries.
+  //----------------------------------------------------------------------------------------------------
+
+  // Load StRefMultCorr library
   gSystem->Load("StRefMultCorr");
-//  StRefMultCorr* refmultCorrUtil = new StRefMultCorr(); 
+
+  // For refmult
   StRefMultCorr* refmultCorrUtil  = CentralityMaker::instance()->getRefMultCorr() ;
 
   // For refmult2
   StRefMultCorr* refmult2CorrUtil = CentralityMaker::instance()->getRefMult2Corr() ;
+
+  // You can also access the StRefMultCorr by direct instantiation
+  // StRefMultCorr* refmultCorrUtil  = new StRefMultCorr("refmult");
+  // StRefMultCorr* refmult2CorrUtil = new StRefMultCorr("refmult2");
 
   // You need to specify the run number you are going to process
   refmultCorrUtil->init(11078000);
@@ -67,9 +83,8 @@ void getCentralityBins()
   //    Int_t StRefMultCorr::getEndRun(const Double_t energy, const Int_t year) ;
 
   // Print all parameters
-  //  - Don't print centrality and correction parameters without any option string (default)
-  refmultCorrUtil->print("Alex");
-  refmult2CorrUtil->print("Xiaofeng");
+  refmultCorrUtil->print();
+  refmult2CorrUtil->print();
 
   // Obtain begin and end run number from energy and year
   cout << "Run " << refmultCorrUtil->getBeginRun(200.0, 2010) << " - " << refmultCorrUtil->getEndRun(200.0, 2010) << endl;
@@ -85,11 +100,13 @@ void getCentralityBins()
   }
   //----------------------------------------------------------------------------------------------------
 
-  // Dummy refmult and primary z-vertex
+  // Dummy refmult and primary z-vertex to test the functions
   const UShort_t refmult = 100 ;
-  const Double_t vz      = 20.0 ;
+  const Double_t vz      = 20.0 ; // cm
   const Double_t zdcCoincidenceRate = 20000 ; // Hz
   const Double_t bbcCoincidenceRate = 20000 ; // Hz
+
+  // The following functions should be called inside the event loop (event-by-event)
 
   // ******* IMPORTANT ***********
   // Call initEvent(const UShort_t RefMult, const Double_t z) function
@@ -124,8 +141,7 @@ void getCentralityBins()
   const Double_t reweight_refmult2 = refmult2CorrUtil->getWeight() ;
 
   //----------------------------------------------------------------------------------------------------
-  // Not really necessary for your study but if you want to see the corrected refmult distribution
-  // Corrected refmult (z-vertex dependent correction)
+  // Corrected refmult (with z-vertex dependent correction and luminositiy correction)
   //  NOTE: type should be double or float, not integer
   const Double_t refmultCor  = refmultCorrUtil->getRefMultCorr() ;
   const Double_t refmult2Cor = refmult2CorrUtil->getRefMultCorr() ;
