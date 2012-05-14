@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.11  2012/05/14 00:40:25  hmasui
+// Exit code if no valid run number found. Fix the initialization of mParameterIndex
+//
 // Revision 1.10  2012/05/09 22:26:46  hmasui
 // Commented out option use in the print() function
 //
@@ -175,13 +178,17 @@ Bool_t StRefMultCorr::isIndexOk() const
 {
   // mParameterIndex not initialized (-1)
   if ( mParameterIndex == -1 ) {
-    Error("StRefMultCorr::isNparSetOk", "mParameterIndex = -1. Call init(const Int_t RunId) function to initialize centrality bins, corrections");
-    return kFALSE ;
+    Error("StRefMultCorr::isIndexOk", "mParameterIndex = -1. Call init(const Int_t RunId) function to initialize centrality bins, corrections");
+    Error("StRefMultCorr::isIndexOk", "mParameterIndex = -1. or use valid run numbers defined in Centrality_def_%s.txt", mName.Data());
+    Error("StRefMultCorr::isIndexOk", "mParameterIndex = -1. exit");
+    cout << endl;
+    // Stop the process if invalid run number found
+    exit(0);
   }
 
   // Out of bounds
   if ( mParameterIndex >= (Int_t)mStart_runId.size() ) {
-    Error("StRefMultCorr::isNparSetOk",
+    Error("StRefMultCorr::isIndexOk",
         Form("mParameterIndex = %d > max number of parameter set = %d. Make sure you put correct index for this energy",
           mParameterIndex, mStart_runId.size()));
     return kFALSE ;
@@ -236,7 +243,8 @@ Bool_t StRefMultCorr::isCentralityOk(const Int_t icent) const
 //____________________________________________________________________________________________________
 void StRefMultCorr::init(const Int_t RunId)
 {
-  // Initialization
+  // Reset mParameterIndex
+  mParameterIndex = -1 ;
 
   // call setParameterIndex
   setParameterIndex(RunId) ;
