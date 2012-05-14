@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.9  2012/05/14 00:43:32  hmasui
+// Added invalid run number test
+//
 // Revision 1.8  2012/05/09 22:25:52  hmasui
 // Update comments (thanks to Bill Llope for suggestions)
 //
@@ -145,5 +148,15 @@ void getCentralityBins()
   //  NOTE: type should be double or float, not integer
   const Double_t refmultCor  = refmultCorrUtil->getRefMultCorr() ;
   const Double_t refmult2Cor = refmult2CorrUtil->getRefMultCorr() ;
+
+  //----------------------------------------------------------------------------------------------------
+  // Invalid run number test
+  const Int_t runId = 12154037 ;
+  cout << "Invalid run number test: " << runId << endl;
+  cout << "The program should be stopped with the error messages from isIndexOk function" << endl;
+  refmult2CorrUtil->init(runId);
+  refmult2CorrUtil->getWeight();
+  // Program should stop here
+  cout << "Problem if you see this message. Contact hmasui@lbl.gov" << endl;
 }
 
