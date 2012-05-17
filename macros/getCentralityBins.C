@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.10  2012/05/17 09:59:24  hmasui
+// Fix the refmult2 argument in initEvent function
+//
 // Revision 1.9  2012/05/14 00:43:32  hmasui
 // Added invalid run number test
 //
@@ -121,7 +124,7 @@ void getCentralityBins()
 
   // ******* VERY IMPORTANT ***********
   // USE BBC COINCIDENCE RATE RATHER THAN ZDC COINCIDENCE RATE FOR REFMULT2
-  refmult2CorrUtil->initEvent(refmult, vz, bbcCoincidenceRate) ;
+  refmult2CorrUtil->initEvent(refmult2, vz, bbcCoincidenceRate) ;
 
   // This also works for 7.7 - 62.4 GeV (see comments above)
 //  refmult2CorrUtil->initEvent(refmult, vz);
