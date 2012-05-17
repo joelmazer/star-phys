@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.11  2012/05/17 10:31:22  hmasui
+// Add comment for library load
+//
 // Revision 1.10  2012/05/17 09:59:24  hmasui
 // Fix the refmult2 argument in initEvent function
 //
@@ -66,6 +69,7 @@ void getCentralityBins()
   //----------------------------------------------------------------------------------------------------
 
   // Load StRefMultCorr library
+  // NOTE: Add this line in your 'macro', not in the source code
   gSystem->Load("StRefMultCorr");
 
   // For refmult
