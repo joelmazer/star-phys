@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.3  2012/05/19 00:49:14  hmasui
+// Update refmult3
+//
 // Revision 1.2  2012/05/08 03:19:39  hmasui
 // Move parameters to Centrality_def_refmult.txt
 //
@@ -35,8 +38,9 @@ class CentralityMaker {
     virtual ~CentralityMaker(); /// Default destructor
 
     // Interface
-    StRefMultCorr* getRefMultCorr() ;
-    StRefMultCorr* getRefMult2Corr() ;
+    StRefMultCorr* getRefMultCorr()  ; // For refmult
+    StRefMultCorr* getRefMult2Corr() ; // For refmult2
+    StRefMultCorr* getRefMult3Corr() ; // For refmult3
 
   private:
     CentralityMaker() ; // Constructor is private
@@ -45,6 +49,7 @@ class CentralityMaker {
     // Centrality correction classes
     StRefMultCorr* fRefMultCorr  ; // refmult based centrality
     StRefMultCorr* fRefMult2Corr ; // refmult2 based centrality
+    StRefMultCorr* fRefMult3Corr ; // refmult3 based centrality
 
     ClassDef(CentralityMaker, 0)
 };

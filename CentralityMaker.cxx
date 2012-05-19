@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.3  2012/05/19 00:49:16  hmasui
+// Update refmult3
+//
 // Revision 1.2  2012/05/08 03:19:36  hmasui
 // Move parameters to Centrality_def_refmult.txt
 //
@@ -23,6 +26,7 @@ CentralityMaker::CentralityMaker()
   // Create instance for centrality classes
   fRefMultCorr  = new StRefMultCorr("refmult") ;
   fRefMult2Corr = new StRefMultCorr("refmult2") ;
+  fRefMult3Corr = new StRefMultCorr("refmult3") ;
 }
 
 //____________________________________________________________________________________________________
@@ -52,4 +56,9 @@ StRefMultCorr* CentralityMaker::getRefMult2Corr()
   return fRefMult2Corr ;
 }
 
+//____________________________________________________________________________________________________
+StRefMultCorr* CentralityMaker::getRefMult3Corr()
+{
+  return fRefMult3Corr ;
+}
 

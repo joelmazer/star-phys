@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.12  2012/05/19 00:48:20  hmasui
+// Update refmult3
+//
 // Revision 1.11  2012/05/14 00:40:25  hmasui
 // Exit code if no valid run number found. Fix the initialization of mParameterIndex
 //
@@ -442,9 +445,12 @@ const Char_t* StRefMultCorr::getTable() const
   else if ( mName.CompareTo("refmult2", TString::kIgnoreCase) == 0 ) {
     return "StRoot/StRefMultCorr/Centrality_def_refmult2.txt";
   }
+  else if ( mName.CompareTo("refmult3", TString::kIgnoreCase) == 0 ) {
+    return "StRoot/StRefMultCorr/Centrality_def_refmult3.txt";
+  }
   else{
     Error("StRefMultCorr::getTable", "No implementation for %s", mName.Data());
-    cout << "Current available option is either refmult or refmult2" << endl;
+    cout << "Current available option is refmult or refmult2 or refmult3" << endl;
     return "";
   }
 }
