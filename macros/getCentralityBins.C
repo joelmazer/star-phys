@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.12  2012/05/19 00:51:14  hmasui
+// Update the usage for refmult3
+//
 // Revision 1.11  2012/05/17 10:31:22  hmasui
 // Add comment for library load
 //
@@ -55,9 +58,9 @@
 //
 //   * You can now use the interface "CentralityMaker" class to access the StRefMultCorr
 //     see the usage below.
-//   * The refmult2 correction class is ready. You can access the correction by
+//   * The refmult2 & refmult3 correction classes are ready. You can access the correction by
 //      - StRefMultCorr* refmult2CorrUtil = CentralityMaker::instance()->getRefMult2Corr() ;
-//      (note the '2' in the function)
+//      (note the '2' in the function, replace 2 to 3 for refmult3)
 //      - You can use exactly the same functions used in StRefMultCorr (see below)
 void getCentralityBins()
 {
@@ -67,6 +70,10 @@ void getCentralityBins()
   //   - You can definitely use the correction classes in your local pc with ROOT
   //     because the codes under StRefMultCorr don't depend on any STAR libraries.
   //----------------------------------------------------------------------------------------------------
+
+  // In the compiled code, don't forget to add
+  // #include "StRoot/StRefMultCorr/StRefMultCorr.h"
+  // #include "StRoot/StRefMultCorr/CentralityMaker.h"
 
   // Load StRefMultCorr library
   // NOTE: Add this line in your 'macro', not in the source code
@@ -78,6 +85,9 @@ void getCentralityBins()
   // For refmult2
   StRefMultCorr* refmult2CorrUtil = CentralityMaker::instance()->getRefMult2Corr() ;
 
+  // For refmult3
+  StRefMultCorr* refmult3CorrUtil = CentralityMaker::instance()->getRefMult3Corr() ;
+
   // You can also access the StRefMultCorr by direct instantiation
   // StRefMultCorr* refmultCorrUtil  = new StRefMultCorr("refmult");
   // StRefMultCorr* refmult2CorrUtil = new StRefMultCorr("refmult2");
@@ -85,6 +95,7 @@ void getCentralityBins()
   // You need to specify the run number you are going to process
   refmultCorrUtil->init(11078000);
   refmult2CorrUtil->init(11078000);
+  refmult3CorrUtil->init(11078000);
 
   //----------------------------------------------------------------------------------------------------
   // *** Optional functions (not necessary to call)
@@ -95,6 +106,7 @@ void getCentralityBins()
   // Print all parameters
   refmultCorrUtil->print();
   refmult2CorrUtil->print();
+  refmult3CorrUtil->print();
 
   // Obtain begin and end run number from energy and year
   cout << "Run " << refmultCorrUtil->getBeginRun(200.0, 2010) << " - " << refmultCorrUtil->getEndRun(200.0, 2010) << endl;
@@ -108,10 +120,16 @@ void getCentralityBins()
   if ( refmult2CorrUtil->isBadRun(12177061) ) {
     cout << "Run 12177061 is bad" << endl;
   }
+
+  if ( refmult3CorrUtil->isBadRun(12177061) ) {
+    cout << "Run 12177061 is bad" << endl;
+  }
   //----------------------------------------------------------------------------------------------------
 
   // Dummy refmult and primary z-vertex to test the functions
-  const UShort_t refmult = 100 ;
+  const UShort_t refmult  = 100 ;
+  const UShort_t refmult2 = 100 ;
+  const UShort_t refmult3 = 100 ;
   const Double_t vz      = 20.0 ; // cm
   const Double_t zdcCoincidenceRate = 20000 ; // Hz
   const Double_t bbcCoincidenceRate = 20000 ; // Hz
@@ -131,7 +149,12 @@ void getCentralityBins()
   refmult2CorrUtil->initEvent(refmult2, vz, bbcCoincidenceRate) ;
 
   // This also works for 7.7 - 62.4 GeV (see comments above)
-//  refmult2CorrUtil->initEvent(refmult, vz);
+//  refmult2CorrUtil->initEvent(refmult2, vz);
+
+  refmult3CorrUtil->initEvent(refmult3, vz, zdcCoincidenceRate) ;
+
+  // This also works for 7.7 - 62.4 GeV (see comments above)
+//  refmult3CorrUtil->initEvent(refmult3, vz);
   //----------------------------------------------------------------------------------------------------
 
   // Get centrality bins
@@ -146,15 +169,21 @@ void getCentralityBins()
   const Int_t cent16_refmult2 = refmult2CorrUtil->getCentralityBin16() ;
   const Int_t cent9_refmult2  = refmult2CorrUtil->getCentralityBin9() ;
 
+  // Centrality from refmult3
+  const Int_t cent16_refmult3 = refmult3CorrUtil->getCentralityBin16() ;
+  const Int_t cent9_refmult3  = refmult3CorrUtil->getCentralityBin9() ;
+
   // Re-weighting corrections for peripheral bins
   const Double_t reweight          = refmultCorrUtil->getWeight() ;
   const Double_t reweight_refmult2 = refmult2CorrUtil->getWeight() ;
+  const Double_t reweight_refmult3 = refmult3CorrUtil->getWeight() ;
 
   //----------------------------------------------------------------------------------------------------
   // Corrected refmult (with z-vertex dependent correction and luminositiy correction)
   //  NOTE: type should be double or float, not integer
   const Double_t refmultCor  = refmultCorrUtil->getRefMultCorr() ;
   const Double_t refmult2Cor = refmult2CorrUtil->getRefMultCorr() ;
+  const Double_t refmult3Cor = refmult3CorrUtil->getRefMultCorr() ;
 
   //----------------------------------------------------------------------------------------------------
   // Invalid run number test
