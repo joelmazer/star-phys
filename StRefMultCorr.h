@@ -1,6 +1,9 @@
-//----------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.8  2013/05/10 18:33:33  hmasui
+// Add TOF tray mult, preliminary update for Run12 U+U
+//
 // Revision 1.7  2012/05/08 03:19:51  hmasui
 // Move parameters to Centrality_def_refmult.txt
 //
@@ -22,12 +25,12 @@
 // Revision 1.1  2011/08/11 18:38:36  hmasui
 // First version of Refmult correction class
 //
-//----------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //  StRefMultCorr class
-//   - Provide centrality bins based on reference multiplicity (refmult) measured in the TPC
+//   - Provide centrality bins based on multiplicity (refmult, refmult2, tof tray mulitplicity etc)
 //     * 5% increment centrality bins (16 bins)
 //     * 5% increment in 0-10%, and 10% increment in 10-80% (9 bins)
-//   - Provide corrected refmult (z-vertex dependence)
+//   - Provide corrected multiplicity (z-vertex dependence)
 //   - Provide "re-weighting" correction, only relevant to the peripheral bins
 //
 //  Centrality binning:
@@ -52,7 +55,7 @@
 //  See how to use this class in StRefMultCorr/macros/getCentralityBins.C
 //
 //  authors: Alexander Schmah, Hiroshi Masui
-//----------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifndef __StRefMultCorr_h__
 #define __StRefMultCorr_h__
@@ -61,13 +64,15 @@
 #include <map>
 #include "TString.h"
 
-//____________________________________________________________________________________________________
-// Class to correct z-vertex dependence of refmult
+//______________________________________________________________________________
+// Class to correct z-vertex dependence, luminosity dependence of multiplicity
 class StRefMultCorr {
   public:
-    // Specify the type of refmult (default is refmult)
+    // Specify the type of multiplicity (default is refmult)
     // "refmult"   - reference multiplicity defined in |eta|<0.5
     // "refmult2"  - reference multiplicity defined in 0.5<|eta|<1.0
+    // "refmult3"  - reference multiplicity defined in |eta|<0.5 without protons
+    // "toftray"   - TOF tray multiplicity
     StRefMultCorr(const TString name="refmult");
     virtual ~StRefMultCorr(); /// Default destructor
 
@@ -78,10 +83,17 @@ class StRefMultCorr {
     //   * Default ZDC coincidence rate = 0 to make the function backward compatible 
     //   --> i.e. no correction will be applied unless users set the values for 200 GeV
     void initEvent(const UShort_t RefMult, const Double_t z,
-        const Double_t zdcCoincidenceRate=0.0) ; // Set refmult, vz and zdc coincidence rate
+        const Double_t zdcCoincidenceRate=0.0) ; // Set multiplicity, vz and zdc coincidence rate
 
-    /// Get corrected refmult, correction as a function of primary z-vertex
+    /// Get corrected multiplicity, correction as a function of primary z-vertex
     Double_t getRefMultCorr() const;
+
+    // Corrected multiplity
+    // flag=0:  Luminosity only
+    // flag=1:  z-vertex only
+    // flag=2:  full correction (default)
+    Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z,
+       	const Double_t zdcCoincidenceRate, const UInt_t flag=2) const ;
 
     /// Get 16 centrality bins (5% increment, 0-5, 5-10, ..., 75-80)
     Int_t getCentralityBin16() const;
@@ -103,7 +115,7 @@ class StRefMultCorr {
     void print(const Option_t* option="") const ;
 
   private:
-    const TString mName ; // refmult or refmult2
+    const TString mName ; // refmult, refmult2, refmult3 or toftray (case insensitive)
 
     // Functions
     void read() ; /// Read input parameters from text file StRoot/StRefMultCorr/Centrality_def.txt
@@ -111,16 +123,12 @@ class StRefMultCorr {
     void clear() ; /// Clear all arrays
     Bool_t isIndexOk() const ; /// 0 <= mParameterIndex < maxArraySize
     Bool_t isZvertexOk() const ; /// mStart_zvertex < z < mStop_zvertex
-    Bool_t isRefMultOk() const ; /// 0-80%, (corrected refmult) > mCentrality_bins[0]
+    Bool_t isRefMultOk() const ; /// 0-80%, (corrected multiplicity) > mCentrality_bins[0]
     Bool_t isCentralityOk(const Int_t icent) const ; /// centrality bin check
     Int_t setParameterIndex(const Int_t RunId) ; /// Parameter index from run id (return mParameterIndex)
 
-    // Corrected refmult
-    Double_t getRefMultCorr(const UShort_t RefMult, const Double_t z, const Double_t zdcCoincidenceRate) const ;
-
-    // Get table name based on the input refmult definition
+    // Get table name based on the input multiplicity definition
     const Char_t* getTable() const ;
-
 
     // Data members
     enum {
@@ -130,9 +138,9 @@ class StRefMultCorr {
         mNPar_luminosity = 2
     };
 
-    // Use these variables to avoid varying the corrected refmult
+    // Use these variables to avoid varying the corrected multiplicity
     // in the same event by random numbers
-    UShort_t mRefMult ;     /// Current reference multiplicity
+    UShort_t mRefMult ;     /// Current multiplicity
     Double_t mVz ;          /// Current primary z-vertex
     Double_t mZdcCoincidenceRate ; /// Current ZDC coincidence rate
     Double_t mRefMult_corr; /// Corrected refmult

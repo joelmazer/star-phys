@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.4  2013/05/10 18:33:33  hmasui
+// Add TOF tray mult, preliminary update for Run12 U+U
+//
 // Revision 1.3  2012/05/19 00:49:14  hmasui
 // Update refmult3
 //
@@ -20,7 +23,7 @@
 //    Replace
 //      StRefMultCorr* refmultCorr = new StRefMultCorr();
 //    to
-//      StRefMultCorr* refmultCorr = CentralityMaker::instance()->getStRefMultCorr();
+//      StRefMultCorr* refmultCorr = CentralityMaker::instance()->getRefMultCorr();
 //
 //  authors: Hiroshi Masui
 //----------------------------------------------------------------------------------------------------
@@ -41,6 +44,10 @@ class CentralityMaker {
     StRefMultCorr* getRefMultCorr()  ; // For refmult
     StRefMultCorr* getRefMult2Corr() ; // For refmult2
     StRefMultCorr* getRefMult3Corr() ; // For refmult3
+    StRefMultCorr* getTofTrayMultCorr() ; // For TOF tray multiplicity
+
+    // Print help messages
+    void help() const ;
 
   private:
     CentralityMaker() ; // Constructor is private
@@ -50,6 +57,7 @@ class CentralityMaker {
     StRefMultCorr* fRefMultCorr  ; // refmult based centrality
     StRefMultCorr* fRefMult2Corr ; // refmult2 based centrality
     StRefMultCorr* fRefMult3Corr ; // refmult3 based centrality
+    StRefMultCorr* fTofTrayMultCorr ; // tofTrayMult based centrality
 
     ClassDef(CentralityMaker, 0)
 };

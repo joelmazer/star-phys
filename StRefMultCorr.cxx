@@ -1,6 +1,9 @@
-//----------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.13  2013/05/10 18:33:33  hmasui
+// Add TOF tray mult, preliminary update for Run12 U+U
+//
 // Revision 1.12  2012/05/19 00:48:20  hmasui
 // Update refmult3
 //
@@ -38,7 +41,7 @@
 // Revision 1.1  2011/08/11 18:38:28  hmasui
 // First version of Refmult correction class
 //
-//----------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #include <algorithm>
 #include <fstream>
@@ -52,9 +55,11 @@ ClassImp(StRefMultCorr)
 
 using namespace std ;
 
-typedef pair<Double_t, Int_t> keys;
+  namespace {
+    typedef pair<Double_t, Int_t> keys;
+  }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 // Default constructor
 StRefMultCorr::StRefMultCorr(const TString name)
  : mName(name)
@@ -71,13 +76,13 @@ StRefMultCorr::StRefMultCorr(const TString name)
   readBadRuns() ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 // Default destructor
 StRefMultCorr::~StRefMultCorr()
 {
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Int_t StRefMultCorr::getBeginRun(const Double_t energy, const Int_t year)
 {
   keys key(std::make_pair(energy, year));
@@ -94,7 +99,7 @@ Int_t StRefMultCorr::getBeginRun(const Double_t energy, const Int_t year)
   return (*(iterRange.first)).second ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Int_t StRefMultCorr::getEndRun(const Double_t energy, const Int_t year)
 {
   keys key(std::make_pair(energy, year));
@@ -113,7 +118,7 @@ Int_t StRefMultCorr::getEndRun(const Double_t energy, const Int_t year)
   return (*iter).second ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 void StRefMultCorr::clear()
 {
   // Clear all arrays, and set parameter index = -1
@@ -147,7 +152,7 @@ void StRefMultCorr::clear()
   mBadRun.clear() ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Bool_t StRefMultCorr::isBadRun(const Int_t RunId)
 {
   // Return true if a given run id is bad run
@@ -162,7 +167,7 @@ Bool_t StRefMultCorr::isBadRun(const Int_t RunId)
   return ( iter != mBadRun.end() ) ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 void StRefMultCorr::initEvent(const UShort_t RefMult, const Double_t z, const Double_t zdcCoincidenceRate)
 {
   // Set refmult, vz and corrected refmult if current (refmult,vz) are different from inputs
@@ -176,7 +181,7 @@ void StRefMultCorr::initEvent(const UShort_t RefMult, const Double_t z, const Do
   }
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Bool_t StRefMultCorr::isIndexOk() const
 {
   // mParameterIndex not initialized (-1)
@@ -200,14 +205,14 @@ Bool_t StRefMultCorr::isIndexOk() const
   return kTRUE ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Bool_t StRefMultCorr::isZvertexOk() const
 {
   // Primary z-vertex check
   return ( mVz > mStart_zvertex[mParameterIndex] && mVz < mStop_zvertex[mParameterIndex] ) ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Bool_t StRefMultCorr::isRefMultOk() const
 {
   // Invalid index
@@ -217,7 +222,7 @@ Bool_t StRefMultCorr::isRefMultOk() const
   return (mRefMult_corr > mCentrality_bins[0][mParameterIndex] && mRefMult_corr < mCentrality_bins[mNCentrality][mParameterIndex]);
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Bool_t StRefMultCorr::isCentralityOk(const Int_t icent) const
 {
   // Invalid centrality id
@@ -243,7 +248,7 @@ Bool_t StRefMultCorr::isCentralityOk(const Int_t icent) const
   return ok ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 void StRefMultCorr::init(const Int_t RunId)
 {
   // Reset mParameterIndex
@@ -253,7 +258,7 @@ void StRefMultCorr::init(const Int_t RunId)
   setParameterIndex(RunId) ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Int_t StRefMultCorr::setParameterIndex(const Int_t RunId)
 {
   // Determine the corresponding parameter set for the input RunId
@@ -275,17 +280,16 @@ Int_t StRefMultCorr::setParameterIndex(const Int_t RunId)
   return mParameterIndex ;
 }
 
-
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Double_t StRefMultCorr::getRefMultCorr() const
 {
   // Call initEvent() first
   return mRefMult_corr ;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z,
-    const Double_t zdcCoincidenceRate) const
+    const Double_t zdcCoincidenceRate, const UInt_t flag) const
 {
   // Apply correction if parameter index & z-vertex are ok
   if (!isIndexOk() || !isZvertexOk()) return RefMult ;
@@ -318,43 +322,22 @@ Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z,
   }
 
   Double_t RefMult_d = (Double_t)(RefMult)+gRandom->Rndm(); // random sampling over bin width -> avoid peak structures in corrected distribution
-  const Double_t RefMult_corr  = RefMult_d*Hovno*correction_luminosity;
-//  cout << "Input RefMult = " << RefMult << ", input z = " << z << ", RefMult_corr = " << RefMult_corr << endl;
-  return RefMult_corr ;
-}
-/*
-//____________________________________________________________________________________________________
-Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z) const
-{
-  // Apply correction if parameter index & z-vertex are ok
-  if (!isIndexOk() || !isZvertexOk(z)) return RefMult ;
-
-  // Correction function for RefMult, takes into account z_vertex dependence
-
-// par0 to par5 define the parameters of a polynomial to parametrize z_vertex dependence of RefMult
-  const Double_t par0 = 1.14384e+02;
-  const Double_t par1 = 9.65079e-02;
-  const Double_t par2 = 2.00631e-03;
-  const Double_t par3 = 5.92159e-05;
-  const Double_t par4 = -5.53470e-07;
-  const Double_t par5 = -7.02779e-08;
-
-  const Double_t  RefMult_ref = par0; // Reference mean RefMult at z=0
-  const Double_t  RefMult_z = par0 + par1*z + par2*z*z + par3*z*z*z + par4*z*z*z*z + par5*z*z*z*z*z; // Parametrization of mean RefMult vs. z_vertex position
-  Double_t  Hovno = 1.0; // Correction factor for RefMult, takes into account z_vertex dependence
-
-  if(RefMult_z > 0.0)
-  {
-    Hovno = RefMult_ref/RefMult_z;
+  Double_t RefMult_corr  = -9999. ;
+  switch ( flag ) {
+    case 0: return RefMult_d*correction_luminosity;
+    case 1: return RefMult_d*Hovno;
+    case 2: return RefMult_d*Hovno*correction_luminosity;
+    default:
+      {
+        Error("StRefMultCorr::getRefMultCorr", "invalid flag, flag=%d, should be 0,1 or 2", flag);
+	return -9999.;
+      }
   }
-
-  Double_t RefMult_d = (Double_t)(RefMult)+ran.Rndm()-0.5; // random sampling over bin width -> avoid peak structures in corrected distribution
-  const Double_t RefMult_corr  = RefMult_d*Hovno;
 //  cout << "Input RefMult = " << RefMult << ", input z = " << z << ", RefMult_corr = " << RefMult_corr << endl;
   return RefMult_corr ;
 }
-*/
-//____________________________________________________________________________________________________
+
+//______________________________________________________________________________
 Double_t StRefMultCorr::getWeight() const
 {
   Double_t Weight = 1.0;
@@ -388,7 +371,7 @@ Double_t StRefMultCorr::getWeight() const
   return Weight;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Int_t StRefMultCorr::getCentralityBin16() const
 {
   Int_t CentBin16 = -1;
@@ -405,7 +388,7 @@ Int_t StRefMultCorr::getCentralityBin16() const
   return (CentBin16==16) ? -1 : CentBin16;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 Int_t StRefMultCorr::getCentralityBin9() const
 {
   Int_t CentBin9 = -1;
@@ -436,7 +419,7 @@ Int_t StRefMultCorr::getCentralityBin9() const
   return CentBin9;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 const Char_t* StRefMultCorr::getTable() const
 {
   if ( mName.CompareTo("refmult", TString::kIgnoreCase) == 0 ) {
@@ -448,19 +431,19 @@ const Char_t* StRefMultCorr::getTable() const
   else if ( mName.CompareTo("refmult3", TString::kIgnoreCase) == 0 ) {
     return "StRoot/StRefMultCorr/Centrality_def_refmult3.txt";
   }
+  else if ( mName.CompareTo("toftray", TString::kIgnoreCase) == 0 ) {
+    return "StRoot/StRefMultCorr/Centrality_def_toftray.txt";
+  }
   else{
     Error("StRefMultCorr::getTable", "No implementation for %s", mName.Data());
-    cout << "Current available option is refmult or refmult2 or refmult3" << endl;
+    cout << "Current available option is refmult or refmult2 or refmult3 or toftray" << endl;
     return "";
   }
 }
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 void StRefMultCorr::read()
 {
   // Open the parameter file and read the data
-  // Assume input file "Centrality_def.txt" is placed under StRoot/StRefMultCorr
-  //  const Char_t* inputFileName("/star/u/aschmah/glauber/RefMult_corr/StRoot/StRefMultCorr/Centrality_def.txt");
-//  const Char_t* inputFileName("/u/aschmah/STAR/glauber/RefMultCorr/StRoot/StRefMultCorr/Centrality_def.txt");
   const Char_t* inputFileName(getTable());
   ifstream ParamFile(inputFileName);
   if(!ParamFile){
@@ -472,7 +455,6 @@ void StRefMultCorr::read()
   string line ;
   getline(ParamFile,line);
 
-//  if(strcmp(line1,"Start_runId") == 0) // strcmp returns 0 if both string are identical
   if(line.find("Start_runId")!=string::npos)
   {
     while(ParamFile.good())
@@ -536,7 +518,7 @@ void StRefMultCorr::read()
   cout << " [OK]" << endl;
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 void StRefMultCorr::readBadRuns()
 {
   // Read bad run numbers
@@ -560,7 +542,7 @@ void StRefMultCorr::readBadRuns()
   }
 }
 
-//____________________________________________________________________________________________________
+//______________________________________________________________________________
 void StRefMultCorr::print(const Option_t* option) const
 {
   cout << "StRefMultCorr::print  Print input parameters for " << mName << " ========================================" << endl << endl;
