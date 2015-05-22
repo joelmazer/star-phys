@@ -1,6 +1,9 @@
 //----------------------------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.5  2015/05/22 06:51:58  hmasui
+// Add grefmult for Run14 Au+Au 200 GeV
+//
 // Revision 1.4  2013/05/10 18:33:33  hmasui
 // Add TOF tray mult, preliminary update for Run12 U+U
 //
@@ -45,6 +48,7 @@ class CentralityMaker {
     StRefMultCorr* getRefMult2Corr() ; // For refmult2
     StRefMultCorr* getRefMult3Corr() ; // For refmult3
     StRefMultCorr* getTofTrayMultCorr() ; // For TOF tray multiplicity
+    StRefMultCorr* getgRefMultCorr()  ; // For grefmult //Run14 AuAu200GeV
 
     // Print help messages
     void help() const ;
@@ -58,6 +62,7 @@ class CentralityMaker {
     StRefMultCorr* fRefMult2Corr ; // refmult2 based centrality
     StRefMultCorr* fRefMult3Corr ; // refmult3 based centrality
     StRefMultCorr* fTofTrayMultCorr ; // tofTrayMult based centrality
+    StRefMultCorr* fgRefMultCorr  ; // grefmult based centrality
 
     ClassDef(CentralityMaker, 0)
 };

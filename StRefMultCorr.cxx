@@ -1,6 +1,9 @@
 //------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.14  2015/05/22 06:52:05  hmasui
+// Add grefmult for Run14 Au+Au 200 GeV
+//
 // Revision 1.13  2013/05/10 18:33:33  hmasui
 // Add TOF tray mult, preliminary update for Run12 U+U
 //
@@ -50,6 +53,7 @@
 #include "StRefMultCorr.h"
 #include "TError.h"
 #include "TRandom.h"
+#include "TMath.h"
 
 ClassImp(StRefMultCorr)
 
@@ -150,6 +154,10 @@ void StRefMultCorr::clear()
   mBeginRun.clear() ;
   mEndRun.clear() ;
   mBadRun.clear() ;
+
+  mnVzBinForWeight = 0 ;
+  mVzEdgeForWeight.clear();
+  mgRefMultTriggerCorrDiffVzScaleRatio.clear() ;
 }
 
 //______________________________________________________________________________
@@ -338,6 +346,101 @@ Double_t StRefMultCorr::getRefMultCorr(const UShort_t RefMult, const Double_t z,
 }
 
 //______________________________________________________________________________
+void StRefMultCorr::readScaleForWeight(const Char_t* input)
+{
+  ifstream fin(input) ;
+  if(!fin) {
+    Error("StRefMultCorr::readScaleForWeight", "can't open %s", input);
+    return;
+  }
+
+  // Users must set the vz bin size by setVzForWeight() (see below)
+  if(mnVzBinForWeight==0) {
+    Error("StRefMultCorr::readScaleForWeight",
+	"Please call setVzForWeight() to set vz bin size");
+    return;
+  }
+
+  // Do not allow multiple calls
+  if(!mgRefMultTriggerCorrDiffVzScaleRatio.empty()) {
+    Error("StRefMultCorr::readScaleForWeight",
+	"scale factor has already set in the array");
+    return;
+  }
+
+  cout << "StRefMultCorr::readScaleForWeight  Read scale factor ..."
+    << flush;
+  while(fin) {
+    Double_t scale[mnVzBinForWeight] ;
+    for(Int_t i=0; i<mnVzBinForWeight; i++) {
+      fin >> scale[i] ;
+    }
+    if(fin.eof()) break ;
+
+    for(Int_t i=0; i<mnVzBinForWeight; i++) {
+      mgRefMultTriggerCorrDiffVzScaleRatio.push_back(scale[i]);
+    }
+  }
+  cout << " [OK]" << endl;
+}
+
+//______________________________________________________________________________
+void StRefMultCorr::setVzForWeight(const Int_t nbin, const Double_t min,
+    const Double_t max)
+{
+  // Do not allow multiple calls
+  if(!mVzEdgeForWeight.empty()) {
+    Error("StRefMultCorr::setVzForWeight",
+	"z-vertex range for weight has already been defined");
+    return;
+  }
+
+  mnVzBinForWeight = nbin ;
+  // calculate increment size
+  const Double_t step = (max-min)/(Double_t)nbin;
+  for(Int_t i=0; i<mnVzBinForWeight+1; i++) {
+    mVzEdgeForWeight.push_back( min + step*i );
+  }
+  // Debug
+  for(Int_t i=0; i<mnVzBinForWeight; i++) {
+    cout << i << " " << step << " " << mVzEdgeForWeight[i]
+      << ", " << mVzEdgeForWeight[i+1] << endl;
+  }
+}
+
+//______________________________________________________________________________
+Double_t StRefMultCorr::getScaleForWeight() const
+{
+  // Special scale factor for global refmult in Run14
+  // to account for the difference between 
+  // VPDMB-30 and VPDMB-5
+
+  // return 1 if mgRefMultTriggerCorrDiffVzScaleRatio array is empty
+  if(mgRefMultTriggerCorrDiffVzScaleRatio.empty()) return 1.0 ;
+
+//  const Int_t nVzBins =6;
+//  Double_t VzEdge[nVzBins+1]={-6., -4., -2., 0., 2., 4., 6.};
+
+  Double_t VPD5weight=1.0;
+  for(Int_t j=0;j<mnVzBinForWeight;j++) {
+    if(mVz>mVzEdgeForWeight[j] && mVz<=mVzEdgeForWeight[j+1]) {
+      //			refMultbin=mgRefMultTriggerCorrDiffVzScaleRatio_2[j]->FindBin(mRefMult_corr+1e-6);
+      //			VPD5weight=mgRefMultTriggerCorrDiffVzScaleRatio_2[j]->GetBinContent(refMultbin);
+      const Int_t refMultbin=static_cast<Int_t>(mRefMult_corr);
+//      VPD5weight=mgRefMultTriggerCorrDiffVzScaleRatio[j][refMultbin];
+      VPD5weight=mgRefMultTriggerCorrDiffVzScaleRatio[refMultbin*mnVzBinForWeight + j];
+      const Double_t tmpContent=VPD5weight;
+      if(tmpContent==0 || (mRefMult_corr>500 && tmpContent<=0.65)) VPD5weight=1.15;//Just because the value of the weight is around 1.15
+      if(mRefMult_corr>500 && tmpContent>=1.35) VPD5weight=1.15;//Remove those Too large weight factor,gRefmult>500
+      // this weight and reweight should be careful, after reweight(most peripheral),Then weight(whole range)
+    }
+  }
+
+
+  return 1.0/VPD5weight;
+}
+
+//______________________________________________________________________________
 Double_t StRefMultCorr::getWeight() const
 {
   Double_t Weight = 1.0;
@@ -354,6 +457,8 @@ Double_t StRefMultCorr::getWeight() const
   const Double_t par3 =   mPar_weight[3][mParameterIndex];
   const Double_t par4 =   mPar_weight[4][mParameterIndex];
   const Double_t A    =   mPar_weight[5][mParameterIndex];
+  const Double_t par6 =   mPar_weight[6][mParameterIndex];//Add by guannan for run14
+  const Double_t par7 =   mPar_weight[7][mParameterIndex];//Add by guannan for run14
 
   // Additional z-vetex dependent correction
   //const Double_t A = ((1.27/1.21))/(30.0*30.0); // Don't ask...
@@ -364,11 +469,16 @@ Double_t StRefMultCorr::getWeight() const
       && mRefMult_corr != -(par3/par2) // avoid denominator = 0
     )
   {
-    Weight = par0 + par1/(par2*mRefMult_corr + par3) + par4*(par2*mRefMult_corr + par3); // Parametrization of MC/data RefMult ratio
+    Weight = par0 + par1/(par2*mRefMult_corr + par3) + par4*(par2*mRefMult_corr + par3) + par6/TMath::Power(par2*mRefMult_corr+par3 ,2) + par7*TMath::Power(par2*mRefMult_corr+par3 ,2); // Parametrization of MC/data RefMult ratio
     Weight = Weight + (Weight-1.0)*(A*mVz*mVz); // z-dependent weight correction
   }
 
-  return Weight;
+  // Special scale factor for global refmult
+  // for others, scale factor = 1
+  const Double_t scale = getScaleForWeight() ;
+  Weight *= scale ;
+
+  return Weight ;
 }
 
 //______________________________________________________________________________
@@ -434,6 +544,9 @@ const Char_t* StRefMultCorr::getTable() const
   else if ( mName.CompareTo("toftray", TString::kIgnoreCase) == 0 ) {
     return "StRoot/StRefMultCorr/Centrality_def_toftray.txt";
   }
+  else if ( mName.CompareTo("grefmult", TString::kIgnoreCase) == 0 ) {
+    return "StRoot/StRefMultCorr/Centrality_def_grefmult.txt";
+  }
   else{
     Error("StRefMultCorr::getTable", "No implementation for %s", mName.Data());
     cout << "Current available option is refmult or refmult2 or refmult3 or toftray" << endl;
@@ -479,30 +592,30 @@ void StRefMultCorr::read()
       mStart_zvertex.push_back( startZvertex ) ;
       mStop_zvertex.push_back( stopZvertex ) ;
       for(Int_t i=0;i<mNCentrality;i++) {
-        Int_t centralitybins=-1;
-        ParamFile >> centralitybins;
-        mCentrality_bins[i].push_back( centralitybins );
+	Int_t centralitybins=-1;
+	ParamFile >> centralitybins;
+	mCentrality_bins[i].push_back( centralitybins );
       }
       Double_t normalize_stop=-1.0 ;
       ParamFile >> normalize_stop ;
       mNormalize_stop.push_back( normalize_stop );
 
       for(Int_t i=0;i<mNPar_z_vertex;i++) {
-          Double_t param=-9999.;
-          ParamFile >> param;
-          mPar_z_vertex[i].push_back( param );
+	Double_t param=-9999.;
+	ParamFile >> param;
+	mPar_z_vertex[i].push_back( param );
       }
 
       for(Int_t i=0;i<mNPar_weight;i++) {
-          Double_t param=-9999.;
-          ParamFile >> param;
-          mPar_weight[i].push_back( param );
+	Double_t param=-9999.;
+	ParamFile >> param;
+	mPar_weight[i].push_back( param );
       }
 
       for(Int_t i=0;i<mNPar_luminosity;i++) {
-          Double_t param=-9999.;
-          ParamFile >> param;
-          mPar_luminosity[i].push_back( param );
+	Double_t param=-9999.;
+	ParamFile >> param;
+	mPar_luminosity[i].push_back( param );
       }
       mCentrality_bins[mNCentrality].push_back( 5000 );
     }
@@ -522,15 +635,17 @@ void StRefMultCorr::read()
 void StRefMultCorr::readBadRuns()
 {
   // Read bad run numbers
-  //   - From year 2010 and 2011
-  for(Int_t i=0; i<2; i++) {
+  //   - From year 2010 - 2014
+  //   - If input file doesn't exist, skip to the next year without warning
+  for(Int_t i=0; i<5; i++) {
     cout << "StRefMultCorr::readBadRuns  For " << mName << ": open " << flush ;
     const Int_t year = 2010 + i ;
     const Char_t* inputFileName(Form("StRoot/StRefMultCorr/bad_runs_refmult_year%d.txt", year));
     ifstream fin(inputFileName);
     if(!fin){
-      Error("StRefMultCorr::readBadRuns", "can't open %s", inputFileName);
-      return;
+      //      Error("StRefMultCorr::readBadRuns", "can't open %s", inputFileName);
+      cout << endl;
+      continue;
     }
     cout << "  " << inputFileName << flush;
 
@@ -547,12 +662,12 @@ void StRefMultCorr::print(const Option_t* option) const
 {
   cout << "StRefMultCorr::print  Print input parameters for " << mName << " ========================================" << endl << endl;
   // Option switched off, can be used to specify parameters
-//  const TString opt(option);
+  //  const TString opt(option);
 
-//  Int_t input_counter = 0;
+  //  Int_t input_counter = 0;
   for(UInt_t id=0; id<mStart_runId.size(); id++) {
     //cout << "Data line = " << input_counter << ", Start_runId = " << Start_runId[input_counter] << ", Stop_runId = " << Stop_runId[input_counter] << endl;
-//    const UInt_t id = mStart_runId.size()-1;
+    //    const UInt_t id = mStart_runId.size()-1;
 
     // Removed line break
     cout << "  Index=" << id;
@@ -561,9 +676,9 @@ void StRefMultCorr::print(const Option_t* option) const
     cout << ", Normalize_stop=" << mNormalize_stop[id];
     cout << endl;
 
-//    if(opt.IsWhitespace()){
-//      continue ;
-//    }
+    //    if(opt.IsWhitespace()){
+    //      continue ;
+    //    }
 
     cout << "Centrality:  ";
     for(Int_t i=0;i<mNCentrality;i++){
@@ -572,7 +687,7 @@ void StRefMultCorr::print(const Option_t* option) const
     cout << endl;
     cout << "RefMult:     ";
     for(Int_t i=0;i<mNCentrality;i++){
-//      cout << Form("StRefMultCorr::read  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
+      //      cout << Form("StRefMultCorr::read  Centrality %3d-%3d %%, refmult > %4d", 75-5*i, 80-5*i, mCentrality_bins[i][id]) << endl;
       const TString tmp(">");
       const TString centrality = tmp + Form("%d", mCentrality_bins[i][id]);
       cout << Form("%6s", centrality.Data());

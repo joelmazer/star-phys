@@ -1,6 +1,9 @@
 //------------------------------------------------------------------------------
 // $Id$
 // $Log$
+// Revision 1.9  2015/05/22 06:52:07  hmasui
+// Add grefmult for Run14 Au+Au 200 GeV
+//
 // Revision 1.8  2013/05/10 18:33:33  hmasui
 // Add TOF tray mult, preliminary update for Run12 U+U
 //
@@ -73,6 +76,7 @@ class StRefMultCorr {
     // "refmult2"  - reference multiplicity defined in 0.5<|eta|<1.0
     // "refmult3"  - reference multiplicity defined in |eta|<0.5 without protons
     // "toftray"   - TOF tray multiplicity
+    // "grefmult"  - global reference multiplicity defined in |eta|<0.5,dca<3,nHitsFit>10
     StRefMultCorr(const TString name="refmult");
     virtual ~StRefMultCorr(); /// Default destructor
 
@@ -107,6 +111,10 @@ class StRefMultCorr {
     // Initialization of centrality bins etc
     void init(const Int_t RunId);
 
+    // Read scale factor from text file
+    void setVzForWeight(const Int_t nbin, const Double_t min, const Double_t max) ;
+    void readScaleForWeight(const Char_t* input) ;
+
     // Return begin/end run from energy and year
     Int_t getBeginRun(const Double_t energy, const Int_t year) ;
     Int_t getEndRun(const Double_t energy, const Int_t year) ;
@@ -127,6 +135,11 @@ class StRefMultCorr {
     Bool_t isCentralityOk(const Int_t icent) const ; /// centrality bin check
     Int_t setParameterIndex(const Int_t RunId) ; /// Parameter index from run id (return mParameterIndex)
 
+    // Special scale factor for Run14 to take into account the weight
+    // between different triggers
+    //  - return 1 for all the other runs
+    Double_t getScaleForWeight() const ;
+
     // Get table name based on the input multiplicity definition
     const Char_t* getTable() const ;
 
@@ -134,7 +147,7 @@ class StRefMultCorr {
     enum {
         mNCentrality   = 16, /// 16 centrality bins, starting from 75-80% with 5% bin width
         mNPar_z_vertex = 8,
-        mNPar_weight   = 6,
+        mNPar_weight   = 8,
         mNPar_luminosity = 2
     };
 
@@ -160,6 +173,11 @@ class StRefMultCorr {
     std::multimap<std::pair<Double_t, Int_t>, Int_t> mBeginRun ; /// Begin run number for a given (energy, year)
     std::multimap<std::pair<Double_t, Int_t>, Int_t> mEndRun   ; /// End run number for a given (energy, year)
     std::vector<Int_t> mBadRun ; /// Bad run number list
+
+    // [6][680];
+    Int_t mnVzBinForWeight ; /// vz bin size for scale factor
+    std::vector<Double_t> mVzEdgeForWeight ; /// vz edge value
+    std::vector<Double_t> mgRefMultTriggerCorrDiffVzScaleRatio ; /// Scale factor for global refmult
 
     ClassDef(StRefMultCorr, 0)
 };
