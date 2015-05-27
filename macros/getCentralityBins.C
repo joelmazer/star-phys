@@ -2,6 +2,9 @@
 // Example macro how to use StRefMultCorr
 // $Id$
 // $Log$
+// Revision 1.13  2015/05/27 02:53:20  hmasui
+// Add text file for special scale factor in Run14, and update the usage in the macro accordingly.
+//
 // Revision 1.12  2012/05/19 00:51:14  hmasui
 // Update the usage for refmult3
 //
@@ -88,6 +91,9 @@ void getCentralityBins()
   // For refmult3
   StRefMultCorr* refmult3CorrUtil = CentralityMaker::instance()->getRefMult3Corr() ;
 
+  // For grefmult
+  StRefMultCorr* grefmultCorrUtil = CentralityMaker::instance()->getgRefMultCorr() ;
+
   // You can also access the StRefMultCorr by direct instantiation
   // StRefMultCorr* refmultCorrUtil  = new StRefMultCorr("refmult");
   // StRefMultCorr* refmult2CorrUtil = new StRefMultCorr("refmult2");
@@ -96,6 +102,7 @@ void getCentralityBins()
   refmultCorrUtil->init(11078000);
   refmult2CorrUtil->init(11078000);
   refmult3CorrUtil->init(11078000);
+  grefmultCorrUtil->init(15075008);
 
   //----------------------------------------------------------------------------------------------------
   // *** Optional functions (not necessary to call)
@@ -107,6 +114,11 @@ void getCentralityBins()
   refmultCorrUtil->print();
   refmult2CorrUtil->print();
   refmult3CorrUtil->print();
+  grefmultCorrUtil->print();
+
+  // scale factor test
+  grefmultCorrUtil->setVzForWeight(6, -6.0, 6.0);
+  grefmultCorrUtil->readScaleForWeight("StRoot/StRefMultCorr/macros/weight_grefmult_vpd30_vpd5_Run14.txt");
 
   // Obtain begin and end run number from energy and year
   cout << "Run " << refmultCorrUtil->getBeginRun(200.0, 2010) << " - " << refmultCorrUtil->getEndRun(200.0, 2010) << endl;
