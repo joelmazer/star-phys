@@ -247,12 +247,7 @@ Bool_t StRefMultCorr::isCentralityOk(const Int_t icent) const
   if ( icent == mNCentrality ) return (mRefMult_corr <= mCentrality_bins[mNCentrality][mParameterIndex]);
 
   const Bool_t ok = (mRefMult_corr > mCentrality_bins[icent][mParameterIndex] && mRefMult_corr <= mCentrality_bins[icent+1][mParameterIndex]);
-//  if(ok){
-//    cout << "StRefMultCorr::isCentralityOk  refmultcorr = " << mRefMult_corr
-//      << "  min. bin = " << mCentrality_bins[icent][mParameterIndex]
-//      << "  max. bin = " << mCentrality_bins[icent+1][mParameterIndex]
-//      << endl;
-//  }
+
   return ok ;
 }
 
@@ -417,19 +412,17 @@ Double_t StRefMultCorr::getScaleForWeight() const
 
   // return 1 if mgRefMultTriggerCorrDiffVzScaleRatio array is empty
   if(mgRefMultTriggerCorrDiffVzScaleRatio.empty()) return 1.0 ;
-
-//  const Int_t nVzBins =6;
-//  Double_t VzEdge[nVzBins+1]={-6., -4., -2., 0., 2., 4., 6.};
-
+  
   Double_t VPD5weight=1.0;
+
   for(Int_t j=0;j<mnVzBinForWeight;j++) {
     if(mVz>mVzEdgeForWeight[j] && mVz<=mVzEdgeForWeight[j+1]) {
-      //			refMultbin=mgRefMultTriggerCorrDiffVzScaleRatio_2[j]->FindBin(mRefMult_corr+1e-6);
-      //			VPD5weight=mgRefMultTriggerCorrDiffVzScaleRatio_2[j]->GetBinContent(refMultbin);
+
       const Int_t refMultbin=static_cast<Int_t>(mRefMult_corr);
-//      VPD5weight=mgRefMultTriggerCorrDiffVzScaleRatio[j][refMultbin];
+
       VPD5weight=mgRefMultTriggerCorrDiffVzScaleRatio[refMultbin*mnVzBinForWeight + j];
       const Double_t tmpContent=VPD5weight;
+
       if(tmpContent==0 || (mRefMult_corr>500 && tmpContent<=0.65)) VPD5weight=1.15;//Just because the value of the weight is around 1.15
       if(mRefMult_corr>500 && tmpContent>=1.35) VPD5weight=1.15;//Remove those Too large weight factor,gRefmult>500
       // this weight and reweight should be careful, after reweight(most peripheral),Then weight(whole range)
@@ -541,6 +534,9 @@ const Char_t* StRefMultCorr::getTable() const
   else if ( mName.CompareTo("refmult3", TString::kIgnoreCase) == 0 ) {
     return "StRoot/StRefMultCorr/Centrality_def_refmult3.txt";
   }
+  else if ( mName.CompareTo("refmult4", TString::kIgnoreCase) == 0 ) {
+    return "StRoot/StRefMultCorr/Centrality_def_refmult4.txt";
+  }
   else if ( mName.CompareTo("toftray", TString::kIgnoreCase) == 0 ) {
     return "StRoot/StRefMultCorr/Centrality_def_toftray.txt";
   }
@@ -637,13 +633,16 @@ void StRefMultCorr::readBadRuns()
   // Read bad run numbers
   //   - From year 2010 - 2014
   //   - If input file doesn't exist, skip to the next year without warning
-  for(Int_t i=0; i<5; i++) {
+  vector<int> years = { 2010, 2011, 2014 };
+  for(int i = 0; i < years.size(); i++ ) {
     cout << "StRefMultCorr::readBadRuns  For " << mName << ": open " << flush ;
-    const Int_t year = 2010 + i ;
+    const Int_t year = years[ i ];
+    
     const Char_t* inputFileName(Form("StRoot/StRefMultCorr/bad_runs_refmult_year%d.txt", year));
+    
     ifstream fin(inputFileName);
     if(!fin){
-      //      Error("StRefMultCorr::readBadRuns", "can't open %s", inputFileName);
+      cout << "Cannot load " << inputFileName << endl;
       cout << endl;
       continue;
     }

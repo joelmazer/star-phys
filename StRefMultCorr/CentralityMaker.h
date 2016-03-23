@@ -47,6 +47,7 @@ class CentralityMaker {
     StRefMultCorr* getRefMultCorr()  ; // For refmult
     StRefMultCorr* getRefMult2Corr() ; // For refmult2
     StRefMultCorr* getRefMult3Corr() ; // For refmult3
+    StRefMultCorr* getRefMult4Corr() ; // For refmult4
     StRefMultCorr* getTofTrayMultCorr() ; // For TOF tray multiplicity
     StRefMultCorr* getgRefMultCorr()  ; // For grefmult //Run14 AuAu200GeV
 
@@ -61,6 +62,7 @@ class CentralityMaker {
     StRefMultCorr* fRefMultCorr  ; // refmult based centrality
     StRefMultCorr* fRefMult2Corr ; // refmult2 based centrality
     StRefMultCorr* fRefMult3Corr ; // refmult3 based centrality
+    StRefMultCorr* fRefMult4Corr ; // refmult4 based centrality
     StRefMultCorr* fTofTrayMultCorr ; // tofTrayMult based centrality
     StRefMultCorr* fgRefMultCorr  ; // grefmult based centrality
 
